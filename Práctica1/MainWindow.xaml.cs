@@ -28,7 +28,7 @@ namespace NPI_1 {
     /// Interaction logic for MainWindow.xaml
     /// </summary>
 
-    enum States { SETTING_POSITION, CHECKING_GESTURE, CHECKING_MOVEMENT };
+    enum States { SETTING_POSITION, CHECKING_GESTURE, MOVEMENT_ONE, MOVEMENT_TWO, MOVEMENT_THREE };
 
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -98,8 +98,11 @@ namespace NPI_1 {
         private KinectSensor my_KinectSensor;
 
         // Punto en la pantalla para guiar al usuario
-        private SkeletonPoint guide_point = new SkeletonPoint();
-
+        private SkeletonPoint gesture_point = new SkeletonPoint();
+        private SkeletonPoint move_1_point = new SkeletonPoint();
+        private SkeletonPoint move_2_point = new SkeletonPoint();
+        private SkeletonPoint move_3_point = new SkeletonPoint();
+        private SkeletonPoint exit = new SkeletonPoint();
 
         // Tolerancia del error de la posición
         private double tolerance = 20;
@@ -113,7 +116,11 @@ namespace NPI_1 {
 
         // Pen para pintar las lineas para situar al usuario
         private Pen situation_pen = new Pen(Brushes.Blue, 6);
-        private Pen aux = new Pen(Brushes.Blue, 6);
+        private Pen gesture_pen = new Pen(Brushes.Blue, 6);
+        private Pen movement_1_pen = new Pen(Brushes.Blue, 6);
+        private Pen movement_2_pen = new Pen(Brushes.Blue, 6);
+        private Pen movement_3_pen = new Pen(Brushes.Blue, 6);
+        private Pen exit_pen = new Pen(Brushes.LightSalmon, 6);
 
         private Skeleton[] skeletons = new Skeleton[0];
         
@@ -206,10 +213,6 @@ namespace NPI_1 {
                 }
             }
 
-            //guide_point.X = 0;
-            //guide_point.Y = (float) 0.5;
-            //guide_point.Z = (float) 1.3;
-
         }
 
         private void Sensor_ColorFrameReady(object sender, ColorImageFrameReadyEventArgs e) {
@@ -284,7 +287,7 @@ namespace NPI_1 {
                     dc.DrawLine(situation_pen, new Point(0.4 * RenderWidth, 0.05 * RenderHeight), new Point(0.6 * RenderWidth, 0.05 * RenderHeight));
                 }
                 else if (state == States.CHECKING_GESTURE) {
-                    Point centre_ellipse = this.SkeletonPointToScreen(guide_point);
+                    Point centre_ellipse = this.SkeletonPointToScreen(gesture_point);
                     //Point centre_image = new Point(RenderWidth * 0.5, RenderHeight * 0.5);
                     //dc.DrawLine(situation_pen, centre_ellipse, centre_image);
                     dc.DrawEllipse(null, situation_pen, centre_ellipse, 20, 20);
@@ -397,17 +400,17 @@ namespace NPI_1 {
             throw new NotImplementedException();
         }
 
-        private void adjustColor(SkeletonPoint destination, SkeletonPoint joint) {
+        private void adjustColor(SkeletonPoint destination, SkeletonPoint joint,Pen pen) {
             double distance = Math.Sqrt((double)((destination.X - joint.X) * (destination.X - joint.X) +
                                                  (destination.Y - joint.Y) * (destination.Y - joint.Y) +
                                                  (destination.Z - joint.Z) * (destination.Z - joint.Z)));
 
             if (distance < tolerance_3d)
-                situation_pen.Brush = Brushes.Green;
+                pen.Brush = Brushes.Green;
             else if (distance < 1.5 * tolerance_3d)
-                situation_pen.Brush = Brushes.Yellow;
+                pen.Brush = Brushes.Yellow;
             else
-                situation_pen.Brush = Brushes.Red;
+                pen.Brush = Brushes.Red;
 
         }
 
@@ -440,9 +443,9 @@ namespace NPI_1 {
                     if (Math.Abs(point_head.Y - height_up) < tolerance && Math.Abs(RenderWidth * 0.5 - point_head.X) < tolerance) { 
                         situation_pen = new Pen(Brushes.Green, 6);
                         state = States.CHECKING_GESTURE;
-                        guide_point = skel.Joints[JointType.ShoulderRight].Position;
-                        guide_point.X += (float) 0.25;
-                        guide_point.Y += (float) 0.2;
+                        gesture_point = skel.Joints[JointType.ShoulderRight].Position;
+                        gesture_point.X += (float) 0.25;
+                        gesture_point.Y += (float) 0.2;
                     }
                     else {
                         situation_pen = new Pen(Brushes.Red, 6);
@@ -450,9 +453,12 @@ namespace NPI_1 {
                 }
                 else if (state== States.CHECKING_GESTURE) {
                     SkeletonPoint right_hand = skel.Joints[JointType.HandRight].Position;
+                    adjustColor(gesture_point, right_hand,gesture_pen);
 
-                    adjustColor(guide_point, right_hand);
+                    if (gesture_pen.Brush == Brushes.Green)
+                        state = States.MOVEMENT_ONE;
                 }
+                
             }
 
         }
