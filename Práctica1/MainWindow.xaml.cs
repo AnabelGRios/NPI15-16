@@ -98,10 +98,12 @@ namespace NPI_1 {
         private KinectSensor my_KinectSensor;
 
         // Punto en la pantalla para guiar al usuario
-        private Point guide_point;
+        private SkeletonPoint guide_point = new SkeletonPoint();
+
 
         // Tolerancia del error de la posición
         private double tolerance = 20;
+        private double tolerance_3d = 0.15;
 
         // Estado de la aplicación
         private States state = States.SETTING_POSITION;
@@ -204,6 +206,10 @@ namespace NPI_1 {
                 }
             }
 
+            //guide_point.X = 0;
+            //guide_point.Y = (float) 0.5;
+            //guide_point.Z = (float) 1.3;
+
         }
 
         private void Sensor_ColorFrameReady(object sender, ColorImageFrameReadyEventArgs e) {
@@ -248,15 +254,16 @@ namespace NPI_1 {
             using (DrawingContext dc = this.drawingGroup.Open()) {
                 // Draw a transparent background to set the render size
                 dc.DrawRectangle(Brushes.Transparent, null, new Rect(0.0, 0.0, RenderWidth, RenderHeight));
+                bool skeleton_tracked = false;
 
                 if (skeletons.Length != 0) {
-                    int zombis = 0;
                     foreach (Skeleton skel in skeletons) {
                         RenderClippedEdges(skel, dc);
 
                         if (skel.TrackingState == SkeletonTrackingState.Tracked) {
                             this.DrawBonesAndJoints(skel, dc);
                             detect_skeletons_position(sender, e);
+                            skeleton_tracked = true;
                         }
                         else if (skel.TrackingState == SkeletonTrackingState.PositionOnly) {
                             dc.DrawEllipse(
@@ -266,22 +273,21 @@ namespace NPI_1 {
                             BodyCenterThickness,
                             BodyCenterThickness);
                         }
-                        else {
-                            zombis++;
-                        }
-                    }
-                    if(zombis==skeletons.Length)
-                        situation_pen.Brush = Brushes.DarkRed;
-                }
-                else {
-                    if (state == States.SETTING_POSITION) {
-                        situation_pen.Brush = Brushes.Purple;
                     }
                 }
+
+                if (skeletons.Length == 0 || !skeleton_tracked)
+                    situation_pen.Brush = Brushes.DarkRed;
 
 
                 if (state == States.SETTING_POSITION) {
                     dc.DrawLine(situation_pen, new Point(0.4 * RenderWidth, 0.05 * RenderHeight), new Point(0.6 * RenderWidth, 0.05 * RenderHeight));
+                }
+                else if (state == States.CHECKING_GESTURE) {
+                    Point centre_ellipse = this.SkeletonPointToScreen(guide_point);
+                    //Point centre_image = new Point(RenderWidth * 0.5, RenderHeight * 0.5);
+                    //dc.DrawLine(situation_pen, centre_ellipse, centre_image);
+                    dc.DrawEllipse(null, situation_pen, centre_ellipse, 20, 20);
                 }
 
                 // prevent drawing outside of our render area
@@ -387,9 +393,22 @@ namespace NPI_1 {
             drawingContext.DrawLine(drawPen, this.SkeletonPointToScreen(joint0.Position), this.SkeletonPointToScreen(joint1.Position));
         }
         
-
         private void My_KinectSensor_DepthFrameReady(object sender, DepthImageFrameReadyEventArgs e) {
             throw new NotImplementedException();
+        }
+
+        private void adjustColor(SkeletonPoint destination, SkeletonPoint joint) {
+            double distance = Math.Sqrt((double)((destination.X - joint.X) * (destination.X - joint.X) +
+                                                 (destination.Y - joint.Y) * (destination.Y - joint.Y) +
+                                                 (destination.Z - joint.Z) * (destination.Z - joint.Z)));
+
+            if (distance < tolerance_3d)
+                situation_pen.Brush = Brushes.Green;
+            else if (distance < 1.5 * tolerance_3d)
+                situation_pen.Brush = Brushes.Yellow;
+            else
+                situation_pen.Brush = Brushes.Red;
+
         }
 
         private void detect_skeletons_position(object sender, SkeletonFrameReadyEventArgs e) {
@@ -414,19 +433,25 @@ namespace NPI_1 {
                 }
 
 
-                if(state == States.SETTING_POSITION) {
+                if (state == States.SETTING_POSITION) {
                     Point point_head=SkeletonPointToScreen(skel.Joints[JointType.Head].Position);
-                    Point point_foot_left = SkeletonPointToScreen(skel.Joints[JointType.FootLeft].Position);
-                    Point point_foot_right = SkeletonPointToScreen(skel.Joints[JointType.FootRight].Position);
 
 
                     if (Math.Abs(point_head.Y - height_up) < tolerance && Math.Abs(RenderWidth * 0.5 - point_head.X) < tolerance) { 
                         situation_pen = new Pen(Brushes.Green, 6);
-                        //state = States.CHECKING_MOVEMENT;
+                        state = States.CHECKING_GESTURE;
+                        guide_point = skel.Joints[JointType.ShoulderRight].Position;
+                        guide_point.X += (float) 0.25;
+                        guide_point.Y += (float) 0.2;
                     }
                     else {
                         situation_pen = new Pen(Brushes.Red, 6);
                     }
+                }
+                else if (state== States.CHECKING_GESTURE) {
+                    SkeletonPoint right_hand = skel.Joints[JointType.HandRight].Position;
+
+                    adjustColor(guide_point, right_hand);
                 }
             }
 
