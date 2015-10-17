@@ -271,11 +271,11 @@ namespace NPI_1 {
                         }
                     }
                     if(zombis==skeletons.Length)
-                        situation_pen.Brush = Brushes.Red;
+                        situation_pen.Brush = Brushes.DarkRed;
                 }
                 else {
                     if (state == States.SETTING_POSITION) {
-                        situation_pen.Brush = Brushes.Red;
+                        situation_pen.Brush = Brushes.Purple;
                     }
                 }
 
@@ -403,7 +403,16 @@ namespace NPI_1 {
             }
 
             if (skeletons.Length != 0) {
+                bool humano_encontrado = false;
                 Skeleton skel = skeletons[0];
+                for (int i = 0; i < skeletons.Length && !humano_encontrado; i++) {
+                    skel = skeletons[i];
+                    if (skel.TrackingState == SkeletonTrackingState.Tracked) {
+                        humano_encontrado = true;
+                    }
+
+                }
+
 
                 if(state == States.SETTING_POSITION) {
                     Point point_head=SkeletonPointToScreen(skel.Joints[JointType.Head].Position);
@@ -411,12 +420,13 @@ namespace NPI_1 {
                     Point point_foot_right = SkeletonPointToScreen(skel.Joints[JointType.FootRight].Position);
 
 
-                    if (Math.Abs(point_head.Y - height_up) < tolerance)
+                    if (Math.Abs(point_head.Y - height_up) < tolerance && Math.Abs(RenderWidth * 0.5 - point_head.X) < tolerance) { 
                         situation_pen = new Pen(Brushes.Green, 6);
-                    //state = States.CHECKING_MOVEMENT;
-                    if (Math.Abs(point_head.Y - height_up) > tolerance)
+                        //state = States.CHECKING_MOVEMENT;
+                    }
+                    else {
                         situation_pen = new Pen(Brushes.Red, 6);
-
+                    }
                 }
             }
 
