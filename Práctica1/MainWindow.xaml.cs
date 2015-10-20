@@ -295,16 +295,20 @@ namespace NPI_1 {
                     dc.DrawEllipse(null, gesture_pen_2, centre_ellipse_2, 20, 20);
                 }
                 else if (state == States.MOVEMENT_ONE) {
-                    Point centre_ellipse = this.SkeletonPointToScreen(move_1_point);
-                    dc.DrawEllipse(null, movement_1_pen, centre_ellipse, 20, 20);
+                    Point centre_ellipse_1 = this.SkeletonPointToScreen(move_1_point);
+                    dc.DrawEllipse(null, movement_1_pen, centre_ellipse_1, 20, 20);
                 }
                 else if (state == States.MOVEMENT_TWO) {
-                    Point centre_ellipse = this.SkeletonPointToScreen(move_2_point);
-                    dc.DrawEllipse(null, movement_2_pen, centre_ellipse, 20, 20);
+                    Point centre_ellipse_2 = this.SkeletonPointToScreen(move_2_point);
+                    Point centre_ellipse_1 = this.SkeletonPointToScreen(move_1_point);
+                    dc.DrawLine(movement_2_pen, centre_ellipse_2, centre_ellipse_1);
+                    dc.DrawEllipse(null, movement_2_pen, centre_ellipse_2, 20, 20);
                 }
                 else if (state == States.MOVEMENT_THREE) {
-                    Point centre_ellipse = this.SkeletonPointToScreen(move_3_point);
-                    dc.DrawEllipse(null, movement_3_pen, centre_ellipse, 20, 20);
+                    Point centre_ellipse_3 = this.SkeletonPointToScreen(move_3_point);
+                    Point centre_ellipse_2 = this.SkeletonPointToScreen(move_2_point);
+                    dc.DrawLine(movement_3_pen, centre_ellipse_3, centre_ellipse_2);
+                    dc.DrawEllipse(null, movement_3_pen, centre_ellipse_3, 20, 20);
                 }
 
                 // prevent drawing outside of our render area
