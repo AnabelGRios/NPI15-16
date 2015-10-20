@@ -288,9 +288,19 @@ namespace NPI_1 {
                 }
                 else if (state == States.CHECKING_GESTURE) {
                     Point centre_ellipse = this.SkeletonPointToScreen(gesture_point);
-                    //Point centre_image = new Point(RenderWidth * 0.5, RenderHeight * 0.5);
-                    //dc.DrawLine(situation_pen, centre_ellipse, centre_image);
-                    dc.DrawEllipse(null, situation_pen, centre_ellipse, 20, 20);
+                    dc.DrawEllipse(null, gesture_pen, centre_ellipse, 20, 20);
+                }
+                else if (state == States.MOVEMENT_ONE) {
+                    Point centre_ellipse = this.SkeletonPointToScreen(move_1_point);
+                    dc.DrawEllipse(null, movement_1_pen, centre_ellipse, 20, 20);
+                }
+                else if (state == States.MOVEMENT_TWO) {
+                    Point centre_ellipse = this.SkeletonPointToScreen(move_2_point);
+                    dc.DrawEllipse(null, movement_2_pen, centre_ellipse, 20, 20);
+                }
+                else if (state == States.MOVEMENT_THREE) {
+                    Point centre_ellipse = this.SkeletonPointToScreen(move_3_point);
+                    dc.DrawEllipse(null, movement_3_pen, centre_ellipse, 20, 20);
                 }
 
                 // prevent drawing outside of our render area
@@ -443,9 +453,21 @@ namespace NPI_1 {
                     if (Math.Abs(point_head.Y - height_up) < tolerance && Math.Abs(RenderWidth * 0.5 - point_head.X) < tolerance) { 
                         situation_pen = new Pen(Brushes.Green, 6);
                         state = States.CHECKING_GESTURE;
+
                         gesture_point = skel.Joints[JointType.ShoulderRight].Position;
                         gesture_point.X += (float) 0.25;
                         gesture_point.Y += (float) 0.2;
+
+                        move_1_point = skel.Joints[JointType.HipRight].Position;
+                        move_1_point.X += (float)0.1;
+                        move_1_point.Y -= (float)0.1;
+
+                        move_2_point = skel.Joints[JointType.ShoulderLeft].Position;
+                        move_2_point.X -= (float)0.1;
+                        move_2_point.Z -= (float)0.4;
+
+                        move_3_point = skel.Joints[JointType.ShoulderRight].Position;
+                        move_3_point.Z -= (float)0.5;
                     }
                     else {
                         situation_pen = new Pen(Brushes.Red, 6);
@@ -458,7 +480,28 @@ namespace NPI_1 {
                     if (gesture_pen.Brush == Brushes.Green)
                         state = States.MOVEMENT_ONE;
                 }
-                
+                else if (state == States.MOVEMENT_ONE) {
+                    SkeletonPoint right_hand = skel.Joints[JointType.HandRight].Position;
+                    adjustColor(move_1_point, right_hand, movement_1_pen);
+
+                    if (movement_1_pen.Brush == Brushes.Green)
+                        state = States.MOVEMENT_TWO;
+                }
+                else if (state == States.MOVEMENT_TWO) {
+                    SkeletonPoint right_hand = skel.Joints[JointType.HandRight].Position;
+                    adjustColor(move_2_point, right_hand, movement_2_pen);
+
+                    if (movement_2_pen.Brush == Brushes.Green)
+                        state = States.MOVEMENT_THREE;
+                }
+                else if (state == States.MOVEMENT_THREE) {
+                    SkeletonPoint right_hand = skel.Joints[JointType.HandRight].Position;
+                    adjustColor(move_3_point, right_hand, movement_3_pen);
+
+                    if (movement_3_pen.Brush == Brushes.Green)
+                        state = States.MOVEMENT_ONE;
+                }
+
             }
 
         }
