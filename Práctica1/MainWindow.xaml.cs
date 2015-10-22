@@ -286,7 +286,10 @@ namespace NPI_1 {
 
 
                 if (state == States.SETTING_POSITION) {
-                    dc.DrawLine(situation_pen, new Point(0.4 * RenderWidth, 0.05 * RenderHeight), new Point(0.6 * RenderWidth, 0.05 * RenderHeight));
+                    Point left = new Point(0.4 * RenderWidth, 0.05 * RenderHeight);
+                    Point right = new Point(0.6 * RenderWidth, 0.05 * RenderHeight);
+                    dc.DrawLine(situation_pen, left, right);
+
                 }
                 else {
                     Point exit_screen = this.SkeletonPointToScreen(exit);
@@ -494,9 +497,19 @@ namespace NPI_1 {
                         exit.X -= (float)0.95;
                         exit.Y += (float)0.05;
 
+                        this.statusBarText.Text = "";
+
                     }
                     else {
                         situation_pen = new Pen(Brushes.Red, 6);
+
+                        if (point_head.Y > height_up) {
+                            this.statusBarText.Text = "Acércate";
+                        }
+                        else {
+                            this.statusBarText.Text = "Aléjate bicho";
+                        }
+
                     }
                 }
                 else if (state== States.CHECKING_GESTURE) {
