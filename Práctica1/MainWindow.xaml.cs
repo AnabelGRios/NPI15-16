@@ -288,7 +288,13 @@ namespace NPI_1 {
                 if (state == States.SETTING_POSITION) {
                     dc.DrawLine(situation_pen, new Point(0.4 * RenderWidth, 0.05 * RenderHeight), new Point(0.6 * RenderWidth, 0.05 * RenderHeight));
                 }
-                else if (state == States.CHECKING_GESTURE) {
+                else {
+                    Point exit_screen = this.SkeletonPointToScreen(exit);
+                    dc.DrawLine(exit_pen, new Point(exit_screen.X - 10, exit_screen.Y + 10), new Point(exit_screen.X + 10, exit_screen.Y - 10));
+                    dc.DrawLine(exit_pen, new Point(exit_screen.X - 10, exit_screen.Y - 10), new Point(exit_screen.X + 10, exit_screen.Y + 10));
+                }
+
+                if (state == States.CHECKING_GESTURE) {
                     Point centre_ellipse = this.SkeletonPointToScreen(gesture_point);
                     Point centre_ellipse_2 = this.SkeletonPointToScreen(gesture_point_2);
                     dc.DrawEllipse(null, gesture_pen, centre_ellipse, 20, 20);
@@ -313,6 +319,7 @@ namespace NPI_1 {
 
                 // prevent drawing outside of our render area
                 this.drawingGroup.ClipGeometry = new RectangleGeometry(new Rect(0.0, 0.0, RenderWidth, RenderHeight));
+
             }
 
         }
@@ -482,6 +489,11 @@ namespace NPI_1 {
 
                         move_3_point = skel.Joints[JointType.ShoulderRight].Position;
                         move_3_point.Z -= (float)0.6;
+
+                        exit = skel.Joints[JointType.Head].Position;
+                        exit.X -= (float)0.95;
+                        exit.Y += (float)0.05;
+
                     }
                     else {
                         situation_pen = new Pen(Brushes.Red, 6);
@@ -518,6 +530,14 @@ namespace NPI_1 {
                         state = States.MOVEMENT_ONE;
                 }
 
+                SkeletonPoint left_hand = skel.Joints[JointType.HandLeft].Position;
+                adjustColor(exit, left_hand, exit_pen);
+
+                if (exit_pen.Brush == Brushes.Green) {
+                    this.WindowClosing(sender, new System.ComponentModel.CancelEventArgs() );
+                    for (int intCounter = App.Current.Windows.Count - 1; intCounter >= 0; intCounter--)
+                        App.Current.Windows[intCounter].Close();
+                }
             }
 
         }
