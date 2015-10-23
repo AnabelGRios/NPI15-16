@@ -21,9 +21,8 @@ namespace NPI_1 {
     using System.Windows.Navigation;
     using System.Windows.Shapes;
     using Microsoft.Kinect;
-
-
-
+    
+    
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
@@ -97,17 +96,16 @@ namespace NPI_1 {
         // Sensor de Kinect que usaremos
         private KinectSensor my_KinectSensor;
 
-        // Punto en la pantalla para guiar al usuario
-        private SkeletonPoint gesture_point = new SkeletonPoint();
-        private SkeletonPoint gesture_point_2 = new SkeletonPoint();
-        private SkeletonPoint move_1_point = new SkeletonPoint();
-        private SkeletonPoint move_2_point = new SkeletonPoint();
-        private SkeletonPoint move_3_point = new SkeletonPoint();
-        private SkeletonPoint exit = new SkeletonPoint();
+        // Gestos o posturas que el usuario realizará
+        Gesture exit;
+        Gesture gesture;
+        Gesture movement_1;
+        Gesture movement_2;
+        Gesture movement_3;
 
         // Tolerancia del error de la posición
         private double tolerance = 20;
-        private double tolerance_3d = 0.15;
+        //private double tolerance_3d = 0.15;
 
         // Estado de la aplicación
         private States state = States.SETTING_POSITION;
@@ -117,12 +115,6 @@ namespace NPI_1 {
 
         // Pen para pintar las lineas para situar al usuario
         private Pen situation_pen = new Pen(Brushes.Blue, 6);
-        private Pen gesture_pen = new Pen(Brushes.Blue, 6);
-        private Pen gesture_pen_2 = new Pen(Brushes.Blue, 6);
-        private Pen movement_1_pen = new Pen(Brushes.Blue, 6);
-        private Pen movement_2_pen = new Pen(Brushes.Blue, 6);
-        private Pen movement_3_pen = new Pen(Brushes.Blue, 6);
-        private Pen exit_pen = new Pen(Brushes.LightSalmon, 6);
 
         private Skeleton[] skeletons = new Skeleton[0];
         
@@ -166,6 +158,22 @@ namespace NPI_1 {
                     null,
                     new Rect(RenderWidth - ClipBoundsThickness, 0, ClipBoundsThickness, RenderHeight));
             }
+        }
+
+       
+        public static SkeletonPoint sum(SkeletonPoint first, SkeletonPoint second) {
+            SkeletonPoint sum = first;
+            sum.X += second.X;
+            sum.Y += second.Y;
+            sum.Z += second.Z;
+            return sum;
+        }
+        public static SkeletonPoint sum(SkeletonPoint point, double x, double y, double z) {
+            SkeletonPoint sum = point;
+            sum.X +=(float)x;
+            sum.Y +=(float)y;
+            sum.Z +=(float)z;
+            return sum;
         }
 
         /// <summary>
@@ -236,6 +244,8 @@ namespace NPI_1 {
             if (null != this.my_KinectSensor) {
                 this.my_KinectSensor.Stop();
             }
+            for (int intCounter = App.Current.Windows.Count - 1; intCounter >= 0; intCounter--)
+                App.Current.Windows[intCounter].Close();
         }
 
         /// <summary>
@@ -250,9 +260,6 @@ namespace NPI_1 {
                 if (skeletonFrame != null) {
                     skeletons = new Skeleton[skeletonFrame.SkeletonArrayLength];
                     skeletonFrame.CopySkeletonDataTo(skeletons);
-                }
-                else {
-                    situation_pen.Brush = Brushes.Purple;
                 }
             }
 
@@ -283,38 +290,26 @@ namespace NPI_1 {
 
                 if (skeletons.Length == 0 || !skeleton_tracked)
                     situation_pen.Brush = Brushes.DarkRed;
-
-
+                
                 if (state == States.SETTING_POSITION) {
                     dc.DrawLine(situation_pen, new Point(0.4 * RenderWidth, 0.05 * RenderHeight), new Point(0.6 * RenderWidth, 0.05 * RenderHeight));
                 }
                 else {
-                    Point exit_screen = this.SkeletonPointToScreen(exit);
-                    dc.DrawLine(exit_pen, new Point(exit_screen.X - 10, exit_screen.Y + 10), new Point(exit_screen.X + 10, exit_screen.Y - 10));
-                    dc.DrawLine(exit_pen, new Point(exit_screen.X - 10, exit_screen.Y - 10), new Point(exit_screen.X + 10, exit_screen.Y + 10));
+                    exit.drawCross(dc, 10);
                 }
 
                 if (state == States.CHECKING_GESTURE) {
-                    Point centre_ellipse = this.SkeletonPointToScreen(gesture_point);
-                    Point centre_ellipse_2 = this.SkeletonPointToScreen(gesture_point_2);
-                    dc.DrawEllipse(null, gesture_pen, centre_ellipse, 20, 20);
-                    dc.DrawEllipse(null, gesture_pen_2, centre_ellipse_2, 20, 20);
+                    gesture.drawCircle(dc, 20);
+                    gesture.drawCircle(dc, 10, 1);
                 }
                 else if (state == States.MOVEMENT_ONE) {
-                    Point centre_ellipse_1 = this.SkeletonPointToScreen(move_1_point);
-                    dc.DrawEllipse(null, movement_1_pen, centre_ellipse_1, 20, 20);
+                    movement_1.drawCircle(dc, 20);
                 }
                 else if (state == States.MOVEMENT_TWO) {
-                    Point centre_ellipse_2 = this.SkeletonPointToScreen(move_2_point);
-                    Point centre_ellipse_1 = this.SkeletonPointToScreen(move_1_point);
-                    dc.DrawLine(movement_2_pen, centre_ellipse_2, centre_ellipse_1);
-                    dc.DrawEllipse(null, movement_2_pen, centre_ellipse_2, 20, 20);
+                    movement_2.drawCircle(dc, 20);
                 }
                 else if (state == States.MOVEMENT_THREE) {
-                    Point centre_ellipse_3 = this.SkeletonPointToScreen(move_3_point);
-                    Point centre_ellipse_2 = this.SkeletonPointToScreen(move_2_point);
-                    dc.DrawLine(movement_3_pen, centre_ellipse_3, centre_ellipse_2);
-                    dc.DrawEllipse(null, movement_3_pen, centre_ellipse_3, 20, 20);
+                    movement_3.drawCircle(dc, 20);
                 }
 
                 // prevent drawing outside of our render area
@@ -323,7 +318,6 @@ namespace NPI_1 {
             }
 
         }
-
 
         /// <summary>
         /// Draws a skeleton's bones and joints
@@ -424,21 +418,7 @@ namespace NPI_1 {
         private void My_KinectSensor_DepthFrameReady(object sender, DepthImageFrameReadyEventArgs e) {
             throw new NotImplementedException();
         }
-
-        private void adjustColor(SkeletonPoint destination, SkeletonPoint joint,Pen pen) {
-            double distance = Math.Sqrt((double)((destination.X - joint.X) * (destination.X - joint.X) +
-                                                 (destination.Y - joint.Y) * (destination.Y - joint.Y) +
-                                                 (destination.Z - joint.Z) * (destination.Z - joint.Z)));
-
-            if (distance < tolerance_3d)
-                pen.Brush = Brushes.Green;
-            else if (distance < 1.5 * tolerance_3d)
-                pen.Brush = Brushes.Yellow;
-            else
-                pen.Brush = Brushes.Red;
-
-        }
-
+        
         private void detect_skeletons_position(object sender, SkeletonFrameReadyEventArgs e) {
             Skeleton[] skeletons = new Skeleton[0];
 
@@ -457,9 +437,7 @@ namespace NPI_1 {
                     if (skel.TrackingState == SkeletonTrackingState.Tracked) {
                         humano_encontrado = true;
                     }
-
                 }
-
 
                 if (state == States.SETTING_POSITION) {
                     Point point_head=SkeletonPointToScreen(skel.Joints[JointType.Head].Position);
@@ -468,79 +446,57 @@ namespace NPI_1 {
                     if (Math.Abs(point_head.Y - height_up) < tolerance && Math.Abs(RenderWidth * 0.5 - point_head.X) < tolerance) { 
                         situation_pen = new Pen(Brushes.Green, 6);
                         state = States.CHECKING_GESTURE;
+                        
+                        SkeletonPoint[] gesture_points = new SkeletonPoint[2];
+                        gesture_points[0] = sum(skel.Joints[JointType.ShoulderRight].Position, 0.25, 0.2, 0);
+                        gesture_points[1] = sum(skel.Joints[JointType.ShoulderRight].Position, 0.25, 0, 0);
+                        JointType[] gesture_joints = new JointType[2];
+                        gesture_joints[0] = JointType.HandRight;
+                        gesture_joints[1] = JointType.HandRight;
+                        gesture = new Gesture(gesture_points, gesture_joints,my_KinectSensor);
 
-                        gesture_point = skel.Joints[JointType.ShoulderRight].Position;
-                        gesture_point.X += (float) 0.25;
-                        gesture_point.Y += (float) 0.2;
-                        gesture_point.Z -= (float) 0.1;
+                        movement_1 = new Gesture(sum(skel.Joints[JointType.HipRight].Position, 0.1, -0.1, 0),JointType.HandRight,my_KinectSensor);
+                        movement_2 = new Gesture(sum(skel.Joints[JointType.ShoulderLeft].Position, -0.1, 0, -0.6), JointType.HandRight, my_KinectSensor);
+                        movement_3 = new Gesture(sum(skel.Joints[JointType.ShoulderRight].Position, 0,0, -0.6), JointType.HandRight, my_KinectSensor);
 
-                        gesture_point_2 = skel.Joints[JointType.ShoulderRight].Position;
-                        gesture_point_2.X += (float) 0.25;
-                        gesture_point_2.Y -= (float) 0.1;
-                        gesture_point_2.Z -= (float) 0.1;
-
-                        move_1_point = skel.Joints[JointType.HipRight].Position;
-                        move_1_point.X += (float)0.1;
-                        move_1_point.Y -= (float)0.1;
-
-                        move_2_point = skel.Joints[JointType.ShoulderLeft].Position;
-                        move_2_point.X -= (float)0.1;
-                        move_2_point.Z -= (float)0.6;
-
-                        move_3_point = skel.Joints[JointType.ShoulderRight].Position;
-                        move_3_point.Z -= (float)0.6;
-
-                        exit = skel.Joints[JointType.Head].Position;
-                        exit.X -= (float)0.95;
-                        exit.Y += (float)0.05;
-
+                        exit = new Gesture(sum(skel.Joints[JointType.Head].Position, -1, -0.05, 0), JointType.HandLeft, my_KinectSensor);
                     }
-                    else {
-                        situation_pen = new Pen(Brushes.Red, 6);
-                    }
+
                 }
-                else if (state== States.CHECKING_GESTURE) {
-                    SkeletonPoint right_hand = skel.Joints[JointType.HandRight].Position;
-                    SkeletonPoint right_elbow = skel.Joints[JointType.ElbowRight].Position;
-                    adjustColor(gesture_point, right_hand, gesture_pen);
-                    adjustColor(gesture_point_2, right_elbow, gesture_pen_2);
+                else {
+                    situation_pen = new Pen(Brushes.Red, 6);
 
-                    if (gesture_pen.Brush == Brushes.Green)
+                    exit.adjustColor(skel);
+
+                    if (exit.isCompleted())
+                        this.WindowClosing(sender, new System.ComponentModel.CancelEventArgs());
+                }
+
+                if (state== States.CHECKING_GESTURE) {
+                    gesture.adjustColor(skel);
+
+                    if (gesture.isCompleted())
                         state = States.MOVEMENT_ONE;
                 }
                 else if (state == States.MOVEMENT_ONE) {
-                    SkeletonPoint right_hand = skel.Joints[JointType.HandRight].Position;
-                    adjustColor(move_1_point, right_hand, movement_1_pen);
+                    movement_1.adjustColor(skel);
 
-                    if (movement_1_pen.Brush == Brushes.Green)
+                    if (movement_1.isCompleted())
                         state = States.MOVEMENT_TWO;
                 }
                 else if (state == States.MOVEMENT_TWO) {
-                    SkeletonPoint right_hand = skel.Joints[JointType.HandRight].Position;
-                    adjustColor(move_2_point, right_hand, movement_2_pen);
+                    movement_2.adjustColor(skel);
 
-                    if (movement_2_pen.Brush == Brushes.Green)
+                    if (movement_2.isCompleted())
                         state = States.MOVEMENT_THREE;
                 }
                 else if (state == States.MOVEMENT_THREE) {
-                    SkeletonPoint right_hand = skel.Joints[JointType.HandRight].Position;
-                    adjustColor(move_3_point, right_hand, movement_3_pen);
+                    movement_3.adjustColor(skel);
 
-                    if (movement_3_pen.Brush == Brushes.Green)
+                    if (movement_3.isCompleted())
                         state = States.MOVEMENT_ONE;
                 }
-
-                SkeletonPoint left_hand = skel.Joints[JointType.HandLeft].Position;
-                adjustColor(exit, left_hand, exit_pen);
-
-                if (exit_pen.Brush == Brushes.Green) {
-                    this.WindowClosing(sender, new System.ComponentModel.CancelEventArgs() );
-                    for (int intCounter = App.Current.Windows.Count - 1; intCounter >= 0; intCounter--)
-                        App.Current.Windows[intCounter].Close();
-                }
             }
-
         }
-
     }
 }
