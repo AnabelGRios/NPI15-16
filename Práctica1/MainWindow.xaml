@@ -21,9 +21,9 @@
         <Viewbox Grid.Row="1" Stretch="Uniform" HorizontalAlignment="Center">
             <Image Name="draw_image" Width="640" Height="480"/>
         </Viewbox>
-        <StatusBar Grid.Row="1" FontSize="40" HorizontalAlignment="Center" Name="statusBar" VerticalAlignment="Center" Background="Transparent" Foreground="GreenYellow" Margin="232,167,231,227" Height="205" Width="533">
+        <StatusBar Grid.Row="1" FontSize="45" HorizontalAlignment="Center" Name="statusBar" VerticalAlignment="Center" Background="Transparent" Foreground="GreenYellow" Margin="232,167,231,227" Height="205" Width="533">
             <StatusBarItem Padding="0 0 0 10" RenderTransformOrigin="0.506,0.57">
-                <TextBlock Name="statusBarText" TextAlignment="Center" Margin="2 0 0 0" RenderTransformOrigin="1.048,2.887" Height="119" Width="554"></TextBlock>
+                <TextBlock Name="statusBarText" TextAlignment="Justify" Margin="2 0 0 0" RenderTransformOrigin="1.048,2.887" Height="205" Width="544"></TextBlock>
             </StatusBarItem>
         </StatusBar>
     </Grid>
