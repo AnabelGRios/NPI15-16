@@ -127,6 +127,14 @@ namespace NPI_1 {
             dc.DrawLine(pens[i], new Point(locations[i].X - radius, locations[i].Y + radius), new Point(locations[i].X + radius, locations[i].Y - radius));
             dc.DrawLine(pens[i], new Point(locations[i].X - radius, locations[i].Y - radius), new Point(locations[i].X + radius, locations[i].Y + radius));
         }
+
+        public Pen getPen(int i = 0) {
+            return pens[i];
+        }
+
+        public Point getPoint(int i = 0) {
+            return screen_locations[i];
+        }
     }
 
 }

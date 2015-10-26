@@ -105,7 +105,6 @@ namespace NPI_1 {
 
         // Tolerancia del error de la posición
         private double tolerance = 20;
-        //private double tolerance_3d = 0.15;
 
         // Estado de la aplicación
         private States state = States.SETTING_POSITION;
@@ -171,6 +170,7 @@ namespace NPI_1 {
             sum.Z += second.Z;
             return sum;
         }
+
         public static SkeletonPoint sum(SkeletonPoint point, double x, double y, double z) {
             SkeletonPoint sum = point;
             sum.X +=(float)x;
@@ -312,7 +312,6 @@ namespace NPI_1 {
                     movement_3.drawCircle(dc, 20);
                     dc.DrawLine(movement_3.getPen(), movement_2.getPoint(), movement_3.getPoint());
                 }
-
 
                 if(situated) {
                     exit.drawCross(dc, 10);
@@ -460,30 +459,36 @@ namespace NPI_1 {
                         gesture_points[1] = sum(skel.Joints[JointType.ShoulderRight].Position, 0.25, -0.1, -0.1);
                         JointType[] gesture_joints = new JointType[2];
                         gesture_joints[0] = JointType.HandRight;
-                        gesture_joints[1] = JointType.HandRight;
+                        gesture_joints[1] = JointType.ElbowRight;
                         gesture = new Gesture(gesture_points, gesture_joints,my_KinectSensor);
 
                         movement_1 = new Gesture(sum(skel.Joints[JointType.HipRight].Position, 0.1, -0.1, 0),JointType.HandRight,my_KinectSensor);
                         movement_2 = new Gesture(sum(skel.Joints[JointType.ShoulderLeft].Position, -0.1, 0, -0.6), JointType.HandRight, my_KinectSensor);
                         movement_3 = new Gesture(sum(skel.Joints[JointType.ShoulderRight].Position, 0, 0, -0.6), JointType.HandRight, my_KinectSensor);
 
-                        exit = new Gesture(sum(skel.Joints[JointType.Head].Position, -1, -0.05, 0), JointType.HandLeft, my_KinectSensor);
+                        exit = new Gesture(sum(skel.Joints[JointType.Head].Position, -0.8, -0.05, 0), JointType.HandLeft, my_KinectSensor);
                     
                         situated = true;
                     }
                     else {
                         situation_pen = new Pen(Brushes.Red, 6);
 
-                        if(actual_frame - first_wrong_frame < 90) {
+                        if(actual_frame - first_wrong_frame < 60) {
                             this.statusBarText.Text = "Vamos a volver a coger \n la posición";
                         }
-                        else if (point_head.Y > height_up) {
+                        else if (point_head.Y > height_up + tolerance) {
                             this.statusBarText.Text = "Acércate";
                         }
-                        else {
+                        else if (point_head.Y < height_up - tolerance) {
                             this.statusBarText.Text = "Aléjate";
                         }
-                        
+                        else if (point_head.X > 0.5*RenderWidth + tolerance) {
+                            this.statusBarText.Text = "Muévete a la izquierda";
+                        }
+                        else if (point_head.X < 0.5 * RenderWidth - tolerance) {
+                            this.statusBarText.Text = "Muévete a la derecha";
+                        }
+
                     }
                 }
                 else {
