@@ -26,5 +26,7 @@
                 <TextBlock Name="statusBarText" TextAlignment="Center" Margin="2 0 0 0" RenderTransformOrigin="1.048,2.887" Height="205" Width="544"></TextBlock>
             </StatusBarItem>
         </StatusBar>
+        <Image Name="imagen" Height="317" Margin="0,272,564,0" Stretch="UniformToFill"  Visibility="Hidden"
+         Source="C:\Users\Anabel\Documents\Visual Studio 2015\Projects\NPI\img.png" VerticalAlignment="Top" Grid.Row="1"/>
     </Grid>
 </Window>

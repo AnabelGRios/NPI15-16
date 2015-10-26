@@ -27,7 +27,7 @@ namespace NPI_1 {
     /// Interaction logic for MainWindow.xaml
     /// </summary>
 
-    enum States { SETTING_POSITION, CHECKING_GESTURE, MOVEMENT_ONE, MOVEMENT_TWO, MOVEMENT_THREE };
+    enum States { SETTING_POSITION, CHECKING_GESTURE, MOVEMENT_ONE, MOVEMENT_TWO, MOVEMENT_THREE, MEASURING_USER };
 
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -111,6 +111,10 @@ namespace NPI_1 {
 
         bool situated = false;
         int first_wrong_frame = -1;
+
+        bool measured = false;
+        int first_frame_measure = -1;
+        float arm = 0, forearm = 0;
 
         // Alturas para situar al usuario
         private double height_up = 0.05 * RenderHeight;
@@ -448,11 +452,17 @@ namespace NPI_1 {
 
                 Point point_head = SkeletonPointToScreen(skel.Joints[JointType.Head].Position);
 
-                if (state == States.SETTING_POSITION) {
+                if (state == States.SETTING_POSITION) { 
 
                     if (Math.Abs(point_head.Y - height_up) < tolerance && Math.Abs(RenderWidth * 0.5 - point_head.X) < tolerance) {
                         situation_pen = new Pen(Brushes.Green, 6);
-                        state = States.CHECKING_GESTURE;
+
+                        if (!measured) {
+                            state = States.MEASURING_USER;
+                        }
+                        else {
+                            state = States.CHECKING_GESTURE;
+                        }
                         
                         SkeletonPoint[] gesture_points = new SkeletonPoint[2];
                         gesture_points[0] = sum(skel.Joints[JointType.ShoulderRight].Position, 0.25, 0.2, -0.1);
@@ -500,8 +510,33 @@ namespace NPI_1 {
 
                 }
 
+                if (state == States.MEASURING_USER) {
+                    this.statusBarText.Text = "Ponte en esta posición. \n Vamos a medirte.";
+                    this.imagen.Visibility = Visibility.Visible;
+                    if (first_frame_measure == -1) {
+                        first_frame_measure = actual_frame;
+                    }
+                    if (actual_frame - first_frame_measure > 120) {
+                        this.statusBarText.Text = "Midiendo.";
+                        SkeletonPoint right_shoulder = skel.Joints[JointType.ShoulderRight].Position;
+                        SkeletonPoint right_elbow = skel.Joints[JointType.ElbowRight].Position;
+                        SkeletonPoint right_wrist = skel.Joints[JointType.WristRight].Position;
+                        arm = (float) Math.Sqrt((double) (Math.Pow((right_shoulder.X - right_elbow.X), 2) +
+                            Math.Pow((right_shoulder.Y - right_elbow.Y) ,2) +
+                            Math.Pow((right_shoulder.Z - right_elbow.Z), 2)));
+                        forearm = (float)Math.Sqrt((double)(Math.Pow((right_wrist.X - right_elbow.X), 2) +
+                            Math.Pow((right_wrist.Y - right_elbow.Y), 2) +
+                            Math.Pow((right_wrist.Z - right_elbow.Z), 2)));
+
+                        measured = true;
+                        state = States.CHECKING_GESTURE;
+                    }
+
+                }
+
                 if (state == States.CHECKING_GESTURE) {
                     this.statusBarText.Text = "";
+                    this.imagen.Visibility = Visibility.Hidden;
                     gesture.adjustColor(skel);
 
                     if (gesture.isCompleted())
