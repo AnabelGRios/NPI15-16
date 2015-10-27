@@ -124,8 +124,8 @@ namespace NPI_1 {
         }
 
         public void drawCross(DrawingContext dc, float radius, int i = 0) {
-            dc.DrawLine(pens[i], new Point(locations[i].X - radius, locations[i].Y + radius), new Point(locations[i].X + radius, locations[i].Y - radius));
-            dc.DrawLine(pens[i], new Point(locations[i].X - radius, locations[i].Y - radius), new Point(locations[i].X + radius, locations[i].Y + radius));
+            dc.DrawLine(pens[i], new Point(screen_locations[i].X - radius, screen_locations[i].Y + radius), new Point(screen_locations[i].X + radius, screen_locations[i].Y - radius));
+            dc.DrawLine(pens[i], new Point(screen_locations[i].X - radius, screen_locations[i].Y - radius), new Point(screen_locations[i].X + radius, screen_locations[i].Y + radius));
         }
 
         public Pen getPen(int i = 0) {

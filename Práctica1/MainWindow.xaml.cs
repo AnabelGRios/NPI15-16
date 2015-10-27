@@ -116,6 +116,9 @@ namespace NPI_1 {
         int first_frame_measure = -1;
         float arm = 0, forearm = 0;
 
+        bool exiting = false;
+        int first_exit_frame = -1;
+
         // Alturas para situar al usuario
         private double height_up = 0.05 * RenderHeight;
 
@@ -476,8 +479,12 @@ namespace NPI_1 {
                         movement_2 = new Gesture(sum(skel.Joints[JointType.ShoulderLeft].Position, -0.1, 0, -0.6), JointType.HandRight, my_KinectSensor);
                         movement_3 = new Gesture(sum(skel.Joints[JointType.ShoulderRight].Position, 0, 0, -0.6), JointType.HandRight, my_KinectSensor);
 
-                        exit = new Gesture(sum(skel.Joints[JointType.Head].Position, -0.8, -0.05, 0), JointType.HandLeft, my_KinectSensor);
-                    
+                        exit = new Gesture(sum(skel.Joints[JointType.Head].Position, -1, -0.05, 0), JointType.HandLeft, my_KinectSensor);
+                        exit.setColor(0, Brushes.Purple);
+                        exit.setColor(1, Brushes.Blue);
+                        exit.setColor(2, Brushes.Gray);
+
+
                         situated = true;
                     }
                     else {
@@ -563,12 +570,31 @@ namespace NPI_1 {
 
                 if (situated) {
                     exit.adjustColor(skel);
-                    
+
                     if (exit.isCompleted()) {
-                        this.WindowClosing(sender, new System.ComponentModel.CancelEventArgs());
-                        for (int intCounter = App.Current.Windows.Count - 1; intCounter >= 0; intCounter--)
-                            App.Current.Windows[intCounter].Close();
+
+                        if (!exiting) {
+                            exiting = true;
+                            first_exit_frame = actual_frame;
+                        }
+                        else {
+                            if (actual_frame - first_exit_frame < 30) {
+                                exit.setColor(0, Brushes.MediumVioletRed);
+                            }
+                            else if (actual_frame - first_exit_frame < 60) {
+                                exit.setColor(0, Brushes.Red);
+                            }
+                            else {
+                                this.WindowClosing(sender, new System.ComponentModel.CancelEventArgs());
+                                for (int intCounter = App.Current.Windows.Count - 1; intCounter >= 0; intCounter--)
+                                    App.Current.Windows[intCounter].Close();
+                            }
+                        }
                     }
+                    else {
+                        exiting = false;
+                    }
+
                 }
             }
         }
