@@ -116,6 +116,11 @@ namespace NPI_1 {
         int first_frame_measure = -1;
         float arm = 0, forearm = 0;
 
+        int first_frame_gesture = -1;
+        int first_frame_move1 = -1;
+        int first_frame_move2 = -1;
+        int first_frame_move3 = -1;
+
         bool exiting = false;
         int first_exit_frame = -1;
 
@@ -477,7 +482,7 @@ namespace NPI_1 {
                         gesture = new Gesture(gesture_points, gesture_joints,my_KinectSensor);
 
                         movement_1 = new Gesture(sum(skel.Joints[JointType.HipRight].Position, 0.1, -0.1, 0),JointType.HandRight,my_KinectSensor);
-                        movement_2 = new Gesture(sum(skel.Joints[JointType.ShoulderLeft].Position, -0.1, 0, -0.6), JointType.HandRight, my_KinectSensor);
+                        movement_2 = new Gesture(sum(skel.Joints[JointType.ShoulderLeft].Position, -0.05, 0, -0.5), JointType.HandRight, my_KinectSensor);
                         movement_3 = new Gesture(sum(skel.Joints[JointType.ShoulderRight].Position, 0, 0, -0.6), JointType.HandRight, my_KinectSensor);
 
                         exit = new Gesture(sum(skel.Joints[JointType.Head].Position, -1, -0.05, 0), JointType.HandLeft, my_KinectSensor);
@@ -527,7 +532,6 @@ namespace NPI_1 {
                         first_frame_measure = actual_frame;
                     }
                     if (actual_frame - first_frame_measure > 120) {
-                        this.statusBarText.Text = "Midiendo.";
                         SkeletonPoint right_shoulder = skel.Joints[JointType.ShoulderRight].Position;
                         SkeletonPoint right_elbow = skel.Joints[JointType.ElbowRight].Position;
                         SkeletonPoint right_wrist = skel.Joints[JointType.WristRight].Position;
@@ -549,31 +553,56 @@ namespace NPI_1 {
                     this.measure_imagen.Visibility = Visibility.Hidden;
                     this.imagen.Visibility = Visibility.Visible;
                     this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/gesto.png")));
+
                     gesture.adjustColor(skel);
 
-                    if (gesture.isCompleted())
+                    if (first_frame_gesture == -1) {
+                        first_frame_gesture = actual_frame;
+                    }
+
+                    if (gesture.isCompleted() && actual_frame - first_frame_gesture > 120) {
                         state = States.MOVEMENT_ONE;
+                        first_frame_gesture = -1;
+                    }
                 }
                 else if (state == States.MOVEMENT_ONE) {
                     this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/movimiento1.png")));
                     movement_1.adjustColor(skel);
 
-                    if (movement_1.isCompleted())
+                    if (first_frame_move1 == -1) {
+                        first_frame_move1 = actual_frame;
+                    }
+
+                    if (movement_1.isCompleted() && actual_frame - first_frame_move1 > 120) {
                         state = States.MOVEMENT_TWO;
+                        first_frame_move1 = -1;
+                    }
                 }
                 else if (state == States.MOVEMENT_TWO) {
                     this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/movimiento2.png")));
                     movement_2.adjustColor(skel);
 
-                    if (movement_2.isCompleted())
+                    if (first_frame_move2 == -1) {
+                        first_frame_move2 = actual_frame;
+                    }
+
+                    if (movement_2.isCompleted() && actual_frame - first_frame_move2 > 120) {
                         state = States.MOVEMENT_THREE;
+                        first_frame_move2 = -1;
+                    }
                 }
                 else if (state == States.MOVEMENT_THREE) {
                     this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/movimiento3.png")));
                     movement_3.adjustColor(skel);
 
-                    if (movement_3.isCompleted())
+                    if (first_frame_move3 == -1) {
+                        first_frame_move3 = actual_frame;
+                    }
+
+                    if (movement_3.isCompleted() && actual_frame - first_frame_move3 > 120) {
                         state = States.MOVEMENT_ONE;
+                        first_frame_move3 = -1;
+                    }
                 }
 
                 if (situated) {
