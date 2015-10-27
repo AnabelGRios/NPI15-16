@@ -455,7 +455,8 @@ namespace NPI_1 {
 
                 Point point_head = SkeletonPointToScreen(skel.Joints[JointType.Head].Position);
 
-                if (state == States.SETTING_POSITION) { 
+                if (state == States.SETTING_POSITION) {
+                    this.imagen.Visibility = Visibility.Hidden;
 
                     if (Math.Abs(point_head.Y - height_up) < tolerance && Math.Abs(RenderWidth * 0.5 - point_head.X) < tolerance) {
                         situation_pen = new Pen(Brushes.Green, 6);
@@ -519,7 +520,9 @@ namespace NPI_1 {
 
                 if (state == States.MEASURING_USER) {
                     this.statusBarText.Text = "Ponte en esta posición. \n Vamos a medirte.";
-                    this.imagen.Visibility = Visibility.Visible;
+                    this.measure_imagen.Visibility = Visibility.Visible;
+                    this.measure_imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/img.png")));
+
                     if (first_frame_measure == -1) {
                         first_frame_measure = actual_frame;
                     }
@@ -543,25 +546,30 @@ namespace NPI_1 {
 
                 if (state == States.CHECKING_GESTURE) {
                     this.statusBarText.Text = "";
-                    this.imagen.Visibility = Visibility.Hidden;
+                    this.measure_imagen.Visibility = Visibility.Hidden;
+                    this.imagen.Visibility = Visibility.Visible;
+                    this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/gesto.png")));
                     gesture.adjustColor(skel);
 
                     if (gesture.isCompleted())
                         state = States.MOVEMENT_ONE;
                 }
                 else if (state == States.MOVEMENT_ONE) {
+                    this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/movimiento1.png")));
                     movement_1.adjustColor(skel);
 
                     if (movement_1.isCompleted())
                         state = States.MOVEMENT_TWO;
                 }
                 else if (state == States.MOVEMENT_TWO) {
+                    this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/movimiento2.png")));
                     movement_2.adjustColor(skel);
 
                     if (movement_2.isCompleted())
                         state = States.MOVEMENT_THREE;
                 }
                 else if (state == States.MOVEMENT_THREE) {
+                    this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/movimiento3.png")));
                     movement_3.adjustColor(skel);
 
                     if (movement_3.isCompleted())
