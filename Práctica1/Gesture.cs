@@ -21,9 +21,16 @@ namespace NPI_1 {
         private Point[] screen_locations;
         private JointType[] joints;
         private Brush[] distance_colors;
+        private Brush time_color;
         private Pen[] pens;
         private float tolerance;
+
+        private bool situated = false;
+        private bool timing = false;
         private bool completed = false;
+
+        private float seconds;
+        private int first_frame;
 
         private Point SkeletonPointToScreen(SkeletonPoint skelpoint, KinectSensor sensor) {
             // Convert point to depth space.  
@@ -42,10 +49,11 @@ namespace NPI_1 {
                 pens[i] = new Pen(distance_colors[2], 6);
             }
 
+            time_color = Brushes.ForestGreen;
 
         }
 
-        public Gesture(SkeletonPoint location, JointType joint, KinectSensor sensor, float tolerance = (float)0.15) {
+        public Gesture(SkeletonPoint location, JointType joint, KinectSensor sensor, float seconds, float tolerance = (float)0.15) {
             this.locations = new SkeletonPoint[1];
             this.locations[0] = location;
 
@@ -58,13 +66,14 @@ namespace NPI_1 {
             this.screen_locations = new Point[1];
             this.screen_locations[0] = SkeletonPointToScreen(locations[0], sensor);
 
+            this.seconds = seconds;
             this.tolerance = tolerance;
 
 
             initializeColors();
         }
 
-        public Gesture(SkeletonPoint[] locations, JointType[] joints, KinectSensor sensor, float tolerance = (float)0.15) {
+        public Gesture(SkeletonPoint[] locations, JointType[] joints, KinectSensor sensor, float seconds, float tolerance = (float)0.15) {
             this.locations = new SkeletonPoint[locations.Length];
             this.locations = locations;
 
@@ -78,18 +87,36 @@ namespace NPI_1 {
                 this.screen_locations[i] = SkeletonPointToScreen(locations[i], sensor);
             }
 
+            this.seconds = seconds;
             this.tolerance = tolerance;
 
             initializeColors();
         }
 
-        public void setColor(int distance, Brush color) {
+        public void setDistanceColor(int distance, Brush color) {
             if (distance_colors.Length > distance)
                 distance_colors[distance] = color;
         }
 
-        public void adjustColor(Skeleton skeleton) {
-            completed = true;
+        public void setTimeColor(Brush color) {
+            time_color = color;
+        }
+
+        private void changePensTimeColor(bool timing) {
+            Brush color;
+            if (timing) 
+                color = time_color;
+            else
+                color = distance_colors[0];
+
+            foreach(Pen pen in pens) {
+                pen.Brush = color;
+            }
+        }
+
+        public void adjustColor(Skeleton skeleton, int actual_frame) {
+            int frames = (int)(seconds * 30);
+            situated = true;
 
             for (int i = 0; i < locations.Length; i++){
                 SkeletonPoint joint_point = skeleton.Joints[joints[i]].Position;
@@ -101,7 +128,7 @@ namespace NPI_1 {
                     pens[i].Brush = distance_colors[0];
                 }
                 else {
-                    completed = false;
+                    situated = false;
                     if (distance < 1.5 * tolerance)
                         pens[i].Brush = distance_colors[1];
                     else
@@ -109,6 +136,26 @@ namespace NPI_1 {
                 }
             }
 
+            if (situated) {
+                if(!timing) {
+                    timing = true;
+                    first_frame = actual_frame;
+                }
+                else {
+                    if(actual_frame-first_frame < frames) {
+                        completed = false;
+                        changePensTimeColor((actual_frame - first_frame) > (frames / 2));
+                    }
+                    else {
+                        completed = true;
+                    }
+                }
+            }
+            else {
+                timing = false;
+                completed = false;
+                first_frame = -1;
+            }
         }
 
         public bool isCompleted() {

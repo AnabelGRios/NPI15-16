@@ -23,10 +23,6 @@ namespace NPI_1 {
     using Microsoft.Kinect;
     
     
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
-
     enum States { SETTING_POSITION, CHECKING_GESTURE, MOVEMENT_ONE, MOVEMENT_TWO, MOVEMENT_THREE, MEASURING_USER };
 
     /// <summary>
@@ -115,15 +111,7 @@ namespace NPI_1 {
         bool measured = false;
         int first_frame_measure = -1;
         float arm = 0, forearm = 0;
-
-        int first_frame_gesture = -1;
-        int first_frame_move1 = -1;
-        int first_frame_move2 = -1;
-        int first_frame_move3 = -1;
-
-        bool exiting = false;
-        int first_exit_frame = -1;
-
+        
         // Alturas para situar al usuario
         private double height_up = 0.05 * RenderHeight;
 
@@ -138,43 +126,7 @@ namespace NPI_1 {
         public MainWindow() {
             InitializeComponent();
         }
-
-        /// <summary>
-        /// Draws indicators to show which edges are clipping skeleton data
-        /// </summary>
-        /// <param name="skeleton">skeleton to draw clipping information for</param>
-        /// <param name="drawingContext">drawing context to draw to</param>
-        private static void RenderClippedEdges(Skeleton skeleton, DrawingContext drawingContext) {
-            if (skeleton.ClippedEdges.HasFlag(FrameEdges.Bottom)) {
-                drawingContext.DrawRectangle(
-                    Brushes.Red,
-                    null,
-                    new Rect(0, RenderHeight - ClipBoundsThickness, RenderWidth, ClipBoundsThickness));
-            }
-
-            if (skeleton.ClippedEdges.HasFlag(FrameEdges.Top)) {
-                drawingContext.DrawRectangle(
-                    Brushes.Red,
-                    null,
-                    new Rect(0, 0, RenderWidth, ClipBoundsThickness));
-            }
-
-            if (skeleton.ClippedEdges.HasFlag(FrameEdges.Left)) {
-                drawingContext.DrawRectangle(
-                    Brushes.Red,
-                    null,
-                    new Rect(0, 0, ClipBoundsThickness, RenderHeight));
-            }
-
-            if (skeleton.ClippedEdges.HasFlag(FrameEdges.Right)) {
-                drawingContext.DrawRectangle(
-                    Brushes.Red,
-                    null,
-                    new Rect(RenderWidth - ClipBoundsThickness, 0, ClipBoundsThickness, RenderHeight));
-            }
-        }
-
-       
+               
         public static SkeletonPoint sum(SkeletonPoint first, SkeletonPoint second) {
             SkeletonPoint sum = first;
             sum.X += second.X;
@@ -285,47 +237,39 @@ namespace NPI_1 {
 
                 if (skeletons.Length != 0) {
                     foreach (Skeleton skel in skeletons) {
-                        RenderClippedEdges(skel, dc);
-
                         if (skel.TrackingState == SkeletonTrackingState.Tracked) {
-                            this.DrawBonesAndJoints(skel, dc);
                             detect_skeletons_position(sender, e);
                             skeleton_tracked = true;
-                        }
-                        else if (skel.TrackingState == SkeletonTrackingState.PositionOnly) {
-                            dc.DrawEllipse(
-                            this.centerPointBrush,
-                            null,
-                            this.SkeletonPointToScreen(skel.Position),
-                            BodyCenterThickness,
-                            BodyCenterThickness);
                         }
                     }
                 }
 
                 if (skeletons.Length == 0 || !skeleton_tracked)
                     situation_pen.Brush = Brushes.DarkRed;
-                
-                if (state == States.SETTING_POSITION) {
-                    dc.DrawLine(situation_pen, new Point(0.4 * RenderWidth, 0.05 * RenderHeight), new Point(0.6 * RenderWidth, 0.05 * RenderHeight));
-                }
-                else if (state == States.CHECKING_GESTURE) {
-                    gesture.drawCircle(dc, 20);
-                    gesture.drawCircle(dc, 10, 1);
-                }
-                else if (state == States.MOVEMENT_ONE) {
-                    movement_1.drawCircle(dc, 20);
-                }
-                else if (state == States.MOVEMENT_TWO) {
-                    movement_2.drawCircle(dc, 20);
-                    dc.DrawLine(movement_2.getPen(), movement_2.getPoint(), movement_1.getPoint());
-                }
-                else if (state == States.MOVEMENT_THREE) {
-                    movement_3.drawCircle(dc, 20);
-                    dc.DrawLine(movement_3.getPen(), movement_2.getPoint(), movement_3.getPoint());
+
+                switch (state) {
+                    case States.SETTING_POSITION:
+                        dc.DrawLine(situation_pen, new Point(0.4 * RenderWidth, 0.05 * RenderHeight), new Point(0.6 * RenderWidth, 0.05 * RenderHeight));
+                        break;
+                    case States.CHECKING_GESTURE:
+                        gesture.drawCircle(dc, 20);
+                        gesture.drawCircle(dc, 10, 1);
+                        break;
+                    case States.MOVEMENT_ONE:
+                        movement_1.drawCircle(dc, 20);
+                        break;
+                    case States.MOVEMENT_TWO:
+                        movement_2.drawCircle(dc, 20);
+                        dc.DrawLine(movement_2.getPen(), movement_2.getPoint(), movement_1.getPoint());
+                        break;
+                    case States.MOVEMENT_THREE:
+                        movement_3.drawCircle(dc, 20);
+                        dc.DrawLine(movement_3.getPen(), movement_2.getPoint(), movement_3.getPoint());
+                        break;
                 }
 
-                if(situated) {
+
+                if(situated && measured) {
                     exit.drawCross(dc, 10);
                 }
 
@@ -335,59 +279,7 @@ namespace NPI_1 {
             }
 
         }
-
-        /// <summary>
-        /// Draws a skeleton's bones and joints
-        /// </summary>
-        /// <param name="skeleton">skeleton to draw</param>
-        /// <param name="drawingContext">drawing context to draw to</param>
-        private void DrawBonesAndJoints(Skeleton skeleton, DrawingContext drawingContext) {
-            // Render Torso
-            this.DrawBone(skeleton, drawingContext, JointType.Head, JointType.ShoulderCenter);
-            this.DrawBone(skeleton, drawingContext, JointType.ShoulderCenter, JointType.ShoulderLeft);
-            this.DrawBone(skeleton, drawingContext, JointType.ShoulderCenter, JointType.ShoulderRight);
-            this.DrawBone(skeleton, drawingContext, JointType.ShoulderCenter, JointType.Spine);
-            this.DrawBone(skeleton, drawingContext, JointType.Spine, JointType.HipCenter);
-            this.DrawBone(skeleton, drawingContext, JointType.HipCenter, JointType.HipLeft);
-            this.DrawBone(skeleton, drawingContext, JointType.HipCenter, JointType.HipRight);
-
-            // Left Arm
-            this.DrawBone(skeleton, drawingContext, JointType.ShoulderLeft, JointType.ElbowLeft);
-            this.DrawBone(skeleton, drawingContext, JointType.ElbowLeft, JointType.WristLeft);
-            this.DrawBone(skeleton, drawingContext, JointType.WristLeft, JointType.HandLeft);
-
-            // Right Arm
-            this.DrawBone(skeleton, drawingContext, JointType.ShoulderRight, JointType.ElbowRight);
-            this.DrawBone(skeleton, drawingContext, JointType.ElbowRight, JointType.WristRight);
-            this.DrawBone(skeleton, drawingContext, JointType.WristRight, JointType.HandRight);
-
-            // Left Leg
-            this.DrawBone(skeleton, drawingContext, JointType.HipLeft, JointType.KneeLeft);
-            this.DrawBone(skeleton, drawingContext, JointType.KneeLeft, JointType.AnkleLeft);
-            this.DrawBone(skeleton, drawingContext, JointType.AnkleLeft, JointType.FootLeft);
-
-            // Right Leg
-            this.DrawBone(skeleton, drawingContext, JointType.HipRight, JointType.KneeRight);
-            this.DrawBone(skeleton, drawingContext, JointType.KneeRight, JointType.AnkleRight);
-            this.DrawBone(skeleton, drawingContext, JointType.AnkleRight, JointType.FootRight);
-
-            // Render Joints
-            foreach (Joint joint in skeleton.Joints) {
-                Brush drawBrush = null;
-
-                if (joint.TrackingState == JointTrackingState.Tracked) {
-                    drawBrush = this.trackedJointBrush;
-                }
-                else if (joint.TrackingState == JointTrackingState.Inferred) {
-                    drawBrush = this.inferredJointBrush;
-                }
-
-                if (drawBrush != null) {
-                    drawingContext.DrawEllipse(drawBrush, null, this.SkeletonPointToScreen(joint.Position), JointThickness, JointThickness);
-                }
-            }
-        }
-
+        
         /// <summary>
         /// Maps a SkeletonPoint to lie within our render space and converts to Point
         /// </summary>
@@ -399,43 +291,57 @@ namespace NPI_1 {
             DepthImagePoint depthPoint = this.my_KinectSensor.CoordinateMapper.MapSkeletonPointToDepthPoint(skelpoint, DepthImageFormat.Resolution640x480Fps30);
             return new Point(depthPoint.X, depthPoint.Y);
         }
+      
 
-        /// <summary>
-        /// Draws a bone line between two joints
-        /// </summary>
-        /// <param name="skeleton">skeleton to draw bones from</param>
-        /// <param name="drawingContext">drawing context to draw to</param>
-        /// <param name="jointType0">joint to start drawing from</param>
-        /// <param name="jointType1">joint to end drawing at</param>
-        private void DrawBone(Skeleton skeleton, DrawingContext drawingContext, JointType jointType0, JointType jointType1) {
-            Joint joint0 = skeleton.Joints[jointType0];
-            Joint joint1 = skeleton.Joints[jointType1];
 
-            // If we can't find either of these joints, exit
-            if (joint0.TrackingState == JointTrackingState.NotTracked ||
-                joint1.TrackingState == JointTrackingState.NotTracked) {
-                return;
-            }
+        private void initializeElements(Skeleton skel) {
+            SkeletonPoint[] gesture_points = new SkeletonPoint[2];
+            gesture_points[0] = sum(skel.Joints[JointType.ShoulderRight].Position, 0.9*arm, 0.9*forearm, -0.1);
+            gesture_points[1] = sum(skel.Joints[JointType.ShoulderRight].Position, 0.9*arm, -0.1, -0.1);
+            JointType[] gesture_joints = new JointType[2];
+            gesture_joints[0] = JointType.HandRight;
+            gesture_joints[1] = JointType.ElbowRight;
+            gesture = new Gesture(gesture_points, gesture_joints, my_KinectSensor, 2);
 
-            // Don't draw if both points are inferred
-            if (joint0.TrackingState == JointTrackingState.Inferred &&
-                joint1.TrackingState == JointTrackingState.Inferred) {
-                return;
-            }
+            movement_1 = new Gesture(sum(skel.Joints[JointType.HipRight].Position, 0.1, -0.1, 0), JointType.HandRight, my_KinectSensor, 2);
+            movement_2 = new Gesture(sum(skel.Joints[JointType.ShoulderLeft].Position, -0.05, 0, -0.8*(arm+ forearm)), JointType.HandRight, my_KinectSensor, 2);
+            movement_3 = new Gesture(sum(skel.Joints[JointType.ShoulderRight].Position, 0, 0, -0.9*(arm+ forearm)), JointType.HandRight, my_KinectSensor, 2);
 
-            // We assume all drawn bones are inferred unless BOTH joints are tracked
-            Pen drawPen = this.inferredBonePen;
-            if (joint0.TrackingState == JointTrackingState.Tracked && joint1.TrackingState == JointTrackingState.Tracked) {
-                drawPen = this.trackedBonePen;
-            }
+            exit = new Gesture(sum(skel.Joints[JointType.Head].Position, -2*(arm+ forearm), -0.05, 0), JointType.HandLeft, my_KinectSensor, 3);
+            exit.setDistanceColor(0, Brushes.Purple);
+            exit.setDistanceColor(1, Brushes.Blue);
+            exit.setDistanceColor(2, Brushes.Gray);
+            exit.setTimeColor(Brushes.Red);
 
-            drawingContext.DrawLine(drawPen, this.SkeletonPointToScreen(joint0.Position), this.SkeletonPointToScreen(joint1.Position));
+            situated = true;
         }
-        
-        private void My_KinectSensor_DepthFrameReady(object sender, DepthImageFrameReadyEventArgs e) {
-            throw new NotImplementedException();
+
+        private void measureUser(Skeleton skel, int actual_frame) {
+            this.statusBarText.Text = "Ponte en esta posición. \n Vamos a medirte.";
+            this.measure_imagen.Visibility = Visibility.Visible;
+            this.measure_imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/img.png")));
+
+            if (first_frame_measure == -1) {
+                first_frame_measure = actual_frame;
+            }
+            if (actual_frame - first_frame_measure > 120) {
+                SkeletonPoint right_shoulder = skel.Joints[JointType.ShoulderRight].Position;
+                SkeletonPoint right_elbow = skel.Joints[JointType.ElbowRight].Position;
+                SkeletonPoint right_wrist = skel.Joints[JointType.WristRight].Position;
+                arm = (float)Math.Sqrt((double)(Math.Pow((right_shoulder.X - right_elbow.X), 2) +
+                    Math.Pow((right_shoulder.Y - right_elbow.Y), 2) +
+                    Math.Pow((right_shoulder.Z - right_elbow.Z), 2)));
+                forearm = (float)Math.Sqrt((double)(Math.Pow((right_wrist.X - right_elbow.X), 2) +
+                    Math.Pow((right_wrist.Y - right_elbow.Y), 2) +
+                    Math.Pow((right_wrist.Z - right_elbow.Z), 2)));
+
+                measured = true;
+                state = States.CHECKING_GESTURE;
+            }
         }
-        
+
+
+
         private void detect_skeletons_position(object sender, SkeletonFrameReadyEventArgs e) {
             Skeleton[] skeletons = new Skeleton[0];
             int actual_frame=-1;
@@ -449,12 +355,12 @@ namespace NPI_1 {
             }
 
             if (skeletons.Length != 0) {
-                bool humano_encontrado = false;
+                bool human_found = false;
                 Skeleton skel = skeletons[0];
-                for (int i = 0; i < skeletons.Length && !humano_encontrado; i++) {
+                for (int i = 0; i < skeletons.Length && !human_found; i++) {
                     skel = skeletons[i];
                     if (skel.TrackingState == SkeletonTrackingState.Tracked) {
-                        humano_encontrado = true;
+                        human_found = true;
                     }
                 }
 
@@ -466,32 +372,10 @@ namespace NPI_1 {
                     if (Math.Abs(point_head.Y - height_up) < tolerance && Math.Abs(RenderWidth * 0.5 - point_head.X) < tolerance) {
                         situation_pen = new Pen(Brushes.Green, 6);
 
-                        if (!measured) {
+                        if (!measured) 
                             state = States.MEASURING_USER;
-                        }
-                        else {
+                        else 
                             state = States.CHECKING_GESTURE;
-                        }
-                        
-                        SkeletonPoint[] gesture_points = new SkeletonPoint[2];
-                        gesture_points[0] = sum(skel.Joints[JointType.ShoulderRight].Position, 0.25, 0.2, -0.1);
-                        gesture_points[1] = sum(skel.Joints[JointType.ShoulderRight].Position, 0.25, -0.1, -0.1);
-                        JointType[] gesture_joints = new JointType[2];
-                        gesture_joints[0] = JointType.HandRight;
-                        gesture_joints[1] = JointType.ElbowRight;
-                        gesture = new Gesture(gesture_points, gesture_joints,my_KinectSensor);
-
-                        movement_1 = new Gesture(sum(skel.Joints[JointType.HipRight].Position, 0.1, -0.1, 0),JointType.HandRight,my_KinectSensor);
-                        movement_2 = new Gesture(sum(skel.Joints[JointType.ShoulderLeft].Position, -0.05, 0, -0.5), JointType.HandRight, my_KinectSensor);
-                        movement_3 = new Gesture(sum(skel.Joints[JointType.ShoulderRight].Position, 0, 0, -0.6), JointType.HandRight, my_KinectSensor);
-
-                        exit = new Gesture(sum(skel.Joints[JointType.Head].Position, -1, -0.05, 0), JointType.HandLeft, my_KinectSensor);
-                        exit.setColor(0, Brushes.Purple);
-                        exit.setColor(1, Brushes.Blue);
-                        exit.setColor(2, Brushes.Gray);
-
-
-                        situated = true;
                     }
                     else {
                         situation_pen = new Pen(Brushes.Red, 6);
@@ -514,38 +398,14 @@ namespace NPI_1 {
 
                     }
                 }
-                else {
-
-                    if (Math.Abs(point_head.Y - height_up) > tolerance || Math.Abs(RenderWidth * 0.5 - point_head.X) > tolerance) {
-                        state = States.SETTING_POSITION;
-                        first_wrong_frame = actual_frame;
-                    }
-
+                else if (Math.Abs(point_head.Y - height_up) > tolerance || Math.Abs(RenderWidth * 0.5 - point_head.X) > tolerance) {
+                    state = States.SETTING_POSITION;
+                    first_wrong_frame = actual_frame;
                 }
 
                 if (state == States.MEASURING_USER) {
-                    this.statusBarText.Text = "Ponte en esta posición. \n Vamos a medirte.";
-                    this.measure_imagen.Visibility = Visibility.Visible;
-                    this.measure_imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/img.png")));
-
-                    if (first_frame_measure == -1) {
-                        first_frame_measure = actual_frame;
-                    }
-                    if (actual_frame - first_frame_measure > 120) {
-                        SkeletonPoint right_shoulder = skel.Joints[JointType.ShoulderRight].Position;
-                        SkeletonPoint right_elbow = skel.Joints[JointType.ElbowRight].Position;
-                        SkeletonPoint right_wrist = skel.Joints[JointType.WristRight].Position;
-                        arm = (float) Math.Sqrt((double) (Math.Pow((right_shoulder.X - right_elbow.X), 2) +
-                            Math.Pow((right_shoulder.Y - right_elbow.Y) ,2) +
-                            Math.Pow((right_shoulder.Z - right_elbow.Z), 2)));
-                        forearm = (float)Math.Sqrt((double)(Math.Pow((right_wrist.X - right_elbow.X), 2) +
-                            Math.Pow((right_wrist.Y - right_elbow.Y), 2) +
-                            Math.Pow((right_wrist.Z - right_elbow.Z), 2)));
-
-                        measured = true;
-                        state = States.CHECKING_GESTURE;
-                    }
-
+                    measureUser(skel, actual_frame);
+                    initializeElements(skel);
                 }
 
                 if (state == States.CHECKING_GESTURE) {
@@ -554,84 +414,42 @@ namespace NPI_1 {
                     this.imagen.Visibility = Visibility.Visible;
                     this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/gesto.png")));
 
-                    gesture.adjustColor(skel);
+                    gesture.adjustColor(skel,actual_frame);
 
-                    if (first_frame_gesture == -1) {
-                        first_frame_gesture = actual_frame;
-                    }
-
-                    if (gesture.isCompleted() && actual_frame - first_frame_gesture > 120) {
+                    if (gesture.isCompleted() ) 
                         state = States.MOVEMENT_ONE;
-                        first_frame_gesture = -1;
-                    }
+
                 }
                 else if (state == States.MOVEMENT_ONE) {
                     this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/movimiento1.png")));
-                    movement_1.adjustColor(skel);
+                    movement_1.adjustColor(skel,actual_frame);
 
-                    if (first_frame_move1 == -1) {
-                        first_frame_move1 = actual_frame;
-                    }
-
-                    if (movement_1.isCompleted() && actual_frame - first_frame_move1 > 120) {
+                    if (movement_1.isCompleted() ) 
                         state = States.MOVEMENT_TWO;
-                        first_frame_move1 = -1;
-                    }
+
                 }
                 else if (state == States.MOVEMENT_TWO) {
                     this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/movimiento2.png")));
-                    movement_2.adjustColor(skel);
+                    movement_2.adjustColor(skel,actual_frame);
 
-                    if (first_frame_move2 == -1) {
-                        first_frame_move2 = actual_frame;
-                    }
-
-                    if (movement_2.isCompleted() && actual_frame - first_frame_move2 > 120) {
+                    if (movement_2.isCompleted()) 
                         state = States.MOVEMENT_THREE;
-                        first_frame_move2 = -1;
-                    }
+
                 }
                 else if (state == States.MOVEMENT_THREE) {
                     this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/movimiento3.png")));
-                    movement_3.adjustColor(skel);
-
-                    if (first_frame_move3 == -1) {
-                        first_frame_move3 = actual_frame;
-                    }
-
-                    if (movement_3.isCompleted() && actual_frame - first_frame_move3 > 120) {
+                    movement_3.adjustColor(skel,actual_frame);
+                    
+                    if ( movement_3.isCompleted() )
                         state = States.MOVEMENT_ONE;
-                        first_frame_move3 = -1;
-                    }
+
                 }
 
-                if (situated) {
-                    exit.adjustColor(skel);
+                if (situated && measured) {
+                    exit.adjustColor(skel,actual_frame);
 
-                    if (exit.isCompleted()) {
-
-                        if (!exiting) {
-                            exiting = true;
-                            first_exit_frame = actual_frame;
-                        }
-                        else {
-                            if (actual_frame - first_exit_frame < 30) {
-                                exit.setColor(0, Brushes.MediumVioletRed);
-                            }
-                            else if (actual_frame - first_exit_frame < 60) {
-                                exit.setColor(0, Brushes.Red);
-                            }
-                            else {
-                                this.WindowClosing(sender, new System.ComponentModel.CancelEventArgs());
-                                for (int intCounter = App.Current.Windows.Count - 1; intCounter >= 0; intCounter--)
-                                    App.Current.Windows[intCounter].Close();
-                            }
-                        }
-                    }
-                    else {
-                        exiting = false;
-                    }
-
+                    if (exit.isCompleted()) 
+                        this.WindowClosing(sender, new System.ComponentModel.CancelEventArgs());
                 }
             }
         }
