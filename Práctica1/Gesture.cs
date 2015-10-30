@@ -9,6 +9,11 @@ namespace NPI_1 {
     /// </summary>
     class Gesture {
         /// <summary>
+        /// Kinect sensor to proyect the points that will be displayed
+        /// </summary>
+        private KinectSensor sensor;
+
+        /// <summary>
         /// 3D-Locations, 2D-Proyected locations and joints that have to be in the correct positions.
         /// </summary>
         private SkeletonPoint[] locations;
@@ -83,13 +88,14 @@ namespace NPI_1 {
             this.pens = new Pen[1];
             this.pens[0] = new Pen(Brushes.Blue, 6);
 
+            this.sensor = sensor;
             this.screen_locations = new Point[1];
-            this.screen_locations[0] = SkeletonPointToScreen(locations[0], sensor);
+            this.screen_locations[0] = SkeletonPointToScreen(locations[0], this.sensor);
 
             this.seconds = seconds;
             this.tolerance = tolerance;
 
-
+            
             initializeColors();
         }
 
@@ -110,9 +116,10 @@ namespace NPI_1 {
 
             this.pens = new Pen[locations.Length];
 
+            this.sensor = sensor;
             this.screen_locations = new Point[locations.Length];
             for (int i = 0; i < locations.Length; i++) {
-                this.screen_locations[i] = SkeletonPointToScreen(locations[i], sensor);
+                this.screen_locations[i] = SkeletonPointToScreen(locations[i], this.sensor);
             }
 
             this.seconds = seconds;
@@ -242,8 +249,15 @@ namespace NPI_1 {
         /// <param name="radius">Radius of the cross</param>
         /// <param name="i">Screen location of the centre</param>
         public void drawCross(DrawingContext dc, float radius, int i = 0) {
-            dc.DrawLine(pens[i], new Point(screen_locations[i].X - radius, screen_locations[i].Y + radius), new Point(screen_locations[i].X + radius, screen_locations[i].Y - radius));
-            dc.DrawLine(pens[i], new Point(screen_locations[i].X - radius, screen_locations[i].Y - radius), new Point(screen_locations[i].X + radius, screen_locations[i].Y + radius));
+            Point centre = screen_locations[i];
+            if(centre.X < radius) {
+                centre.X = radius;
+            }
+            if (centre.Y < radius) {
+                centre.Y = radius;
+            }
+            dc.DrawLine(pens[i], new Point(centre.X - radius, centre.Y + radius), new Point(centre.X + radius, centre.Y - radius));
+            dc.DrawLine(pens[i], new Point(centre.X - radius, centre.Y - radius), new Point(centre.X + radius, centre.Y + radius));
         }
 
         /// <summary>
@@ -261,5 +275,17 @@ namespace NPI_1 {
         public Point getPoint(int i = 0) {
             return screen_locations[i];
         }
+
+        /// <summary>
+        /// Adjust locations of the gesture
+        /// </summary>
+        /// <param name="new_locations">New locations of the gesture</param>
+        public void adjustLocations(SkeletonPoint[] new_locations) {
+            for (int i = 0; i < locations.Length; i++) {
+                locations[i] = new_locations[i];
+                screen_locations[i] = SkeletonPointToScreen(new_locations[i], sensor);
+            }
+        }
     }
 }
+

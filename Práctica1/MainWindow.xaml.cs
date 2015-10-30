@@ -50,6 +50,7 @@ namespace NPI_1 {
         /// Gestures the user is going to do
         /// </summary>
         Gesture exit;
+        Gesture measuring;
         Gesture gesture;
         Gesture movement_1;
         Gesture movement_2;
@@ -215,12 +216,21 @@ namespace NPI_1 {
         /// <param name="e">event arguments</param>
         private void SensorSkeletonFrameReady(object sender, SkeletonFrameReadyEventArgs e) {
             Skeleton[] skeletons = new Skeleton[0];
+            bool skeleton_tracked = false;
 
             // Copy the Skeleton data to skeletons
             using (SkeletonFrame skeletonFrame = e.OpenSkeletonFrame()) {
                 if (skeletonFrame != null) {
                     skeletons = new Skeleton[skeletonFrame.SkeletonArrayLength];
                     skeletonFrame.CopySkeletonDataTo(skeletons);
+
+                    // Find a tracked object of Skeleton class 
+                    foreach (Skeleton skel in skeletons) {
+                        if (skel.TrackingState == SkeletonTrackingState.Tracked) {
+                            detect_skeletons_position(skel, skeletonFrame.FrameNumber);
+                            skeleton_tracked = true;
+                        }
+                    }
                 }
             }
 
@@ -228,22 +238,11 @@ namespace NPI_1 {
                 
                 // Draw a transparent background to set the render size
                 dc.DrawRectangle(Brushes.Transparent, null, new Rect(0.0, 0.0, RenderWidth, RenderHeight));
-                bool skeleton_tracked = false;
-
-                // Find a tracked object of Skeleton class 
-                if (skeletons.Length != 0) {
-                    foreach (Skeleton skel in skeletons) {
-                        if (skel.TrackingState == SkeletonTrackingState.Tracked) {
-                            detect_skeletons_position(sender, e);
-                            skeleton_tracked = true;
-                        }
-                    }
-                }
-
+                
                 // Change colors and states if no skeleton is recorded
                 if (skeletons.Length == 0 || !skeleton_tracked) {
                     situation_pen.Brush = Brushes.DarkRed;
-                    this.measured = false;
+                    this.measured = false;  //Remeasure the user if it's not captured by the sensor
                     state = States.SETTING_POSITION;
                 }
 
@@ -251,6 +250,12 @@ namespace NPI_1 {
                 switch (state) {
                     case States.SETTING_POSITION:
                         dc.DrawLine(situation_pen, new Point(0.4 * RenderWidth, 0.05 * RenderHeight), new Point(0.6 * RenderWidth, 0.05 * RenderHeight));
+                        break;
+                    case States.MEASURING_USER:
+                        measuring.drawCircle(dc, 10, 0);
+                        measuring.drawCircle(dc, 10, 1);
+                        measuring.drawCircle(dc, 10, 2);
+                        measuring.drawCircle(dc, 10, 3);
                         break;
                     case States.CHECKING_GESTURE:
                         gesture.drawCircle(dc, 20);
@@ -269,9 +274,11 @@ namespace NPI_1 {
                         break;
                 }
 
-
-                if(situated && measured) {
+                if (measured) { 
                     exit.drawCross(dc, 10);
+
+                    if (exit.isCompleted())
+                        this.WindowClosing(sender, new System.ComponentModel.CancelEventArgs());
                 }
 
                 // prevent drawing outside of our render area
@@ -293,7 +300,6 @@ namespace NPI_1 {
             return new Point(depthPoint.X, depthPoint.Y);
         }
       
-
         /// <summary>
         /// Determine gestures and guides positions
         /// </summary>
@@ -308,16 +314,14 @@ namespace NPI_1 {
             gesture = new Gesture(gesture_points, gesture_joints, my_KinectSensor, 2);
 
             movement_1 = new Gesture(sum(skel.Joints[JointType.HipRight].Position, 0.1, -0.1, 0), JointType.HandRight, my_KinectSensor, 2);
-            movement_2 = new Gesture(sum(skel.Joints[JointType.ShoulderLeft].Position, -0.05, 0, -0.9*(arm+ forearm)), JointType.HandRight, my_KinectSensor, 2);
-            movement_3 = new Gesture(sum(skel.Joints[JointType.ShoulderRight].Position, -0.05, 0, -(arm+ forearm)), JointType.HandRight, my_KinectSensor, 2);
+            movement_2 = new Gesture(sum(skel.Joints[JointType.ShoulderLeft].Position, -0.05, 0, -(arm+ forearm)), JointType.HandRight, my_KinectSensor, 2);
+            movement_3 = new Gesture(sum(skel.Joints[JointType.ShoulderRight].Position, -0.05, 0, -1.05*(arm+ forearm)), JointType.HandRight, my_KinectSensor, 2);
 
             exit = new Gesture(sum(skel.Joints[JointType.Head].Position, -2*(arm+ forearm), -0.05, 0), JointType.HandLeft, my_KinectSensor, 3);
             exit.setDistanceColor(0, Brushes.Purple);
             exit.setDistanceColor(1, Brushes.Blue);
             exit.setDistanceColor(2, Brushes.Gray);
             exit.setTimeColor(Brushes.Red);
-
-            situated = true;
         }
 
         /// <summary>
@@ -330,22 +334,39 @@ namespace NPI_1 {
             this.measure_imagen.Visibility = Visibility.Visible;
             // Show the guide image
             this.measure_imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/img.png")));
+            
+            SkeletonPoint right_shoulder = skel.Joints[JointType.ShoulderRight].Position;
+            SkeletonPoint right_elbow = skel.Joints[JointType.ElbowRight].Position;
+            SkeletonPoint right_wrist = skel.Joints[JointType.WristRight].Position;
+            arm = (float)Math.Sqrt((double)(Math.Pow((right_shoulder.X - right_elbow.X), 2) +
+                Math.Pow((right_shoulder.Y - right_elbow.Y), 2) +
+                Math.Pow((right_shoulder.Z - right_elbow.Z), 2)));
+            forearm = (float)Math.Sqrt((double)(Math.Pow((right_wrist.X - right_elbow.X), 2) +
+                Math.Pow((right_wrist.Y - right_elbow.Y), 2) +
+                Math.Pow((right_wrist.Z - right_elbow.Z), 2)));
 
+            SkeletonPoint[] measuring_points = new SkeletonPoint[4];
+            measuring_points[0] = sum(skel.Joints[JointType.ShoulderRight].Position, arm+0.05, -0.05, 0);
+            measuring_points[1] = sum(skel.Joints[JointType.ShoulderRight].Position, (arm + forearm) + 0.05, -0.05, 0);
+            measuring_points[2] = sum(skel.Joints[JointType.ShoulderLeft].Position, -arm-0.05, -0.05, 0);
+            measuring_points[3] = sum(skel.Joints[JointType.ShoulderLeft].Position, -(arm + forearm) - 0.05, -0.05, 0);
+            
             if (first_frame_measure == -1) {
+                //Defines the measuring gesture
+                JointType[] measuring_joints = new JointType[4];
+                measuring_joints[0] = JointType.ElbowRight;
+                measuring_joints[1] = JointType.HandRight;
+                measuring_joints[2] = JointType.ElbowLeft;
+                measuring_joints[3] = JointType.HandLeft;
+                measuring = new Gesture(measuring_points, measuring_joints, my_KinectSensor, 3);
+
                 // Begin the count
                 first_frame_measure = actual_frame;
             }
-            if (actual_frame - first_frame_measure > 120) {
-                SkeletonPoint right_shoulder = skel.Joints[JointType.ShoulderRight].Position;
-                SkeletonPoint right_elbow = skel.Joints[JointType.ElbowRight].Position;
-                SkeletonPoint right_wrist = skel.Joints[JointType.WristRight].Position;
-                arm = (float)Math.Sqrt((double)(Math.Pow((right_shoulder.X - right_elbow.X), 2) +
-                    Math.Pow((right_shoulder.Y - right_elbow.Y), 2) +
-                    Math.Pow((right_shoulder.Z - right_elbow.Z), 2)));
-                forearm = (float)Math.Sqrt((double)(Math.Pow((right_wrist.X - right_elbow.X), 2) +
-                    Math.Pow((right_wrist.Y - right_elbow.Y), 2) +
-                    Math.Pow((right_wrist.Z - right_elbow.Z), 2)));
-                
+            measuring.adjustLocations(measuring_points);
+            measuring.adjustColor(skel, actual_frame);
+
+            if (measuring.isCompleted()) { 
                 measured = true;
                 first_frame_measure = -1;   // To ensure that the next time that an user need to be measured, he is
                 state = States.CHECKING_GESTURE;
@@ -358,120 +379,101 @@ namespace NPI_1 {
         /// </summary>
         /// <param name="sender">object sending the event</param>
         /// <param name="e">event arguments</param>
-        private void detect_skeletons_position(object sender, SkeletonFrameReadyEventArgs e) {
-            Skeleton[] skeletons = new Skeleton[0];
-            int actual_frame=-1;
+        private void detect_skeletons_position(Skeleton skel, int actual_frame) {
+            // The head point projection to the screen is compared with the guide line
+            Point point_head = SkeletonPointToScreen(skel.Joints[JointType.Head].Position);
 
-            using (SkeletonFrame skeleton_frame = e.OpenSkeletonFrame()) {
-                if (skeleton_frame != null) {
-                    skeletons = new Skeleton[skeleton_frame.SkeletonArrayLength];
-                    skeleton_frame.CopySkeletonDataTo(skeletons);
-                    actual_frame = skeleton_frame.FrameNumber;
+            if (state == States.SETTING_POSITION) {
+                this.imagen.Visibility = Visibility.Hidden;
+
+                if (Math.Abs(point_head.Y - height_up) < tolerance && Math.Abs(RenderWidth * 0.5 - point_head.X) < tolerance) {
+                    situation_pen = new Pen(Brushes.Green, 6);
+
+                    if (!measured)
+                        state = States.MEASURING_USER;
+                    else
+                        state = States.CHECKING_GESTURE;
+
+                    situated = true;
+                }
+                else {
+                    // We give the instructions to situate the user
+                    situation_pen = new Pen(Brushes.Red, 6);
+
+                    if(actual_frame - first_wrong_frame < 60) {
+                        this.statusBarText.Text = "Vamos a volver a coger \n la posición";
+                    }
+                    else if (point_head.Y > height_up + tolerance) {
+                        this.statusBarText.Text = "Acércate";
+                    }
+                    else if (point_head.Y < height_up - tolerance) {
+                        this.statusBarText.Text = "Aléjate";
+                    }
+                    else if (point_head.X > 0.5*RenderWidth + tolerance) {
+                        this.statusBarText.Text = "Muévete a la izquierda";
+                    }
+                    else if (point_head.X < 0.5 * RenderWidth - tolerance) {
+                        this.statusBarText.Text = "Muévete a la derecha";
+                    }
+
                 }
             }
-
-            if (skeletons.Length != 0) {
-                // To ensure a Skeleton is tracked
-                bool human_found = false;
-                Skeleton skel = skeletons[0];
-                for (int i = 0; i < skeletons.Length && !human_found; i++) {
-                    skel = skeletons[i];
-                    if (skel.TrackingState == SkeletonTrackingState.Tracked) {
-                        human_found = true;
-                    }
-                }
-
-                // The head point projection to the screen is compared with the guide line
-                Point point_head = SkeletonPointToScreen(skel.Joints[JointType.Head].Position);
-
-                if (state == States.SETTING_POSITION) {
-                    this.imagen.Visibility = Visibility.Hidden;
-
-                    if (Math.Abs(point_head.Y - height_up) < tolerance && Math.Abs(RenderWidth * 0.5 - point_head.X) < tolerance) {
-                        situation_pen = new Pen(Brushes.Green, 6);
-
-                        if (!measured)
-                            state = States.MEASURING_USER;
-                        else
-                            state = States.CHECKING_GESTURE;
-                    }
-                    else {
-                        // We give the instructions to situate the user
-                        situation_pen = new Pen(Brushes.Red, 6);
-
-                        if(actual_frame - first_wrong_frame < 60) {
-                            this.statusBarText.Text = "Vamos a volver a coger \n la posición";
-                        }
-                        else if (point_head.Y > height_up + tolerance) {
-                            this.statusBarText.Text = "Acércate";
-                        }
-                        else if (point_head.Y < height_up - tolerance) {
-                            this.statusBarText.Text = "Aléjate";
-                        }
-                        else if (point_head.X > 0.5*RenderWidth + tolerance) {
-                            this.statusBarText.Text = "Muévete a la izquierda";
-                        }
-                        else if (point_head.X < 0.5 * RenderWidth - tolerance) {
-                            this.statusBarText.Text = "Muévete a la derecha";
-                        }
-
-                    }
-                }
-                else if (Math.Abs(point_head.Y - height_up) > tolerance || Math.Abs(RenderWidth * 0.5 - point_head.X) > tolerance) {
+            else if (Math.Abs(point_head.Y - height_up) > tolerance || Math.Abs(RenderWidth * 0.5 - point_head.X) > tolerance) {
+                if(actual_frame-first_wrong_frame > 30)
                     state = States.SETTING_POSITION;
-                    first_wrong_frame = actual_frame;
-                }
 
-                if (state == States.MEASURING_USER) {
-                    measureUser(skel, actual_frame);
-                    initializeElements(skel);
-                }
-
-                if (state == States.CHECKING_GESTURE) {
-                    this.statusBarText.Text = "";
-                    this.measure_imagen.Visibility = Visibility.Hidden;
-                    this.imagen.Visibility = Visibility.Visible;
-                    this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/gesto.png")));
-
-                    gesture.adjustColor(skel,actual_frame);
-
-                    if (gesture.isCompleted() ) 
-                        state = States.MOVEMENT_ONE;
-
-                }
-                else if (state == States.MOVEMENT_ONE) {
-                    this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/movimiento1.png")));
-                    movement_1.adjustColor(skel,actual_frame);
-
-                    if (movement_1.isCompleted() ) 
-                        state = States.MOVEMENT_TWO;
-
-                }
-                else if (state == States.MOVEMENT_TWO) {
-                    this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/movimiento2.png")));
-                    movement_2.adjustColor(skel,actual_frame);
-
-                    if (movement_2.isCompleted()) 
-                        state = States.MOVEMENT_THREE;
-
-                }
-                else if (state == States.MOVEMENT_THREE) {
-                    this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/movimiento3.png")));
-                    movement_3.adjustColor(skel,actual_frame);
-                    
-                    if ( movement_3.isCompleted() )
-                        state = States.MOVEMENT_ONE;
-
-                }
-
-
-                if (situated && measured) {
-                    exit.adjustColor(skel,actual_frame);
-
-                    if (exit.isCompleted()) 
-                        this.WindowClosing(sender, new System.ComponentModel.CancelEventArgs());
-                }
+                if (situated)
+                    situated = false;
             }
+            else {
+                situated = true;
+                first_wrong_frame = actual_frame;
+            }
+
+            if (state == States.MEASURING_USER) {
+                measureUser(skel, actual_frame);
+                initializeElements(skel);
+            }
+
+            if (state == States.CHECKING_GESTURE) {
+                this.statusBarText.Text = "";
+                this.measure_imagen.Visibility = Visibility.Hidden;
+                this.imagen.Visibility = Visibility.Visible;
+                this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/gesto.png")));
+
+                gesture.adjustColor(skel,actual_frame);
+
+                if (gesture.isCompleted() ) 
+                    state = States.MOVEMENT_ONE;
+
+            }
+            else if (state == States.MOVEMENT_ONE) {
+                this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/movimiento1.png")));
+                movement_1.adjustColor(skel,actual_frame);
+
+                if (movement_1.isCompleted() ) 
+                    state = States.MOVEMENT_TWO;
+
+            }
+            else if (state == States.MOVEMENT_TWO) {
+                this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/movimiento2.png")));
+                movement_2.adjustColor(skel,actual_frame);
+
+                if (movement_2.isCompleted()) 
+                    state = States.MOVEMENT_THREE;
+
+            }
+            else if (state == States.MOVEMENT_THREE) {
+                this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/movimiento3.png")));
+                movement_3.adjustColor(skel,actual_frame);
+                    
+                if ( movement_3.isCompleted() )
+                    state = States.MOVEMENT_ONE;
+
+            }
+
+            if (measured) 
+                exit.adjustColor(skel, actual_frame);
         }
     }
 }
