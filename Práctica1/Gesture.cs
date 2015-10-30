@@ -1,37 +1,46 @@
 ﻿using System;
-using System.IO;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using Microsoft.Kinect;
 
 namespace NPI_1 {
+    /// <summary>
+    /// 3D Points and joints collections to user interaction
+    /// </summary>
     class Gesture {
+        /// <summary>
+        /// 3D-Locations, 2D-Proyected locations and joints that have to be in the correct positions.
+        /// </summary>
         private SkeletonPoint[] locations;
         private Point[] screen_locations;
         private JointType[] joints;
+
+        /// <summary>
+        /// Colors and pens that will be used to indicate de distance or time that a joint has been the location
+        /// </summary>
         private Brush[] distance_colors;
         private Brush time_color;
         private Pen[] pens;
         private float tolerance;
 
+        /// <summary>
+        /// Private states to determine if a gesture's been completed, the user's well situated...
+        /// </summary>
         private bool situated = false;
         private bool timing = false;
         private bool completed = false;
 
+        /// <summary>
+        /// Second the joint's to be in the location and first frame it reaches the location
+        /// </summary>
         private float seconds;
         private int first_frame;
 
+        /// <summary>
+        /// Maps a SkeletonPoint to lie within our render space and converts to Point
+        /// </summary>
+        /// <param name="skelpoint">point to map</param>
+        /// <returns>mapped point</returns>
         private Point SkeletonPointToScreen(SkeletonPoint skelpoint, KinectSensor sensor) {
             // Convert point to depth space.  
             // We are not using depth directly, but we do want the points in our 640x480 output resolution.
@@ -39,6 +48,9 @@ namespace NPI_1 {
             return new Point(depthPoint.X, depthPoint.Y);
         }
 
+        /// <summary>
+        /// Initialize distance and time colors.
+        /// </summary>
         private void initializeColors() {
             distance_colors = new Brush[3];
             distance_colors[0] = Brushes.Green;
@@ -53,6 +65,14 @@ namespace NPI_1 {
 
         }
 
+        /// <summary>
+        /// Create a new instance of Gesture
+        /// </summary>
+        /// <param name="location">3Dpoint</param>
+        /// <param name="joint">Joint must be in the location</param>
+        /// <param name="sensor">Sensor to Maps a Skeleton to the screen</param>
+        /// <param name="seconds">Seconds to maintain the position</param>
+        /// <param name="tolerance">Tolerance of the error</param>
         public Gesture(SkeletonPoint location, JointType joint, KinectSensor sensor, float seconds, float tolerance = (float)0.15) {
             this.locations = new SkeletonPoint[1];
             this.locations[0] = location;
@@ -73,6 +93,14 @@ namespace NPI_1 {
             initializeColors();
         }
 
+        /// <summary>
+        /// Create a new instance of Gesture
+        /// </summary>
+        /// <param name="location">3Dpoint collection</param>
+        /// <param name="joint">Joint collection must be in the location</param>
+        /// <param name="sensor">Sensor to Maps a Skeleton to the screen</param>
+        /// <param name="seconds">Seconds to maintain the position</param>
+        /// <param name="tolerance">Tolerance of the error</param>
         public Gesture(SkeletonPoint[] locations, JointType[] joints, KinectSensor sensor, float seconds, float tolerance = (float)0.15) {
             this.locations = new SkeletonPoint[locations.Length];
             this.locations = locations;
@@ -93,15 +121,28 @@ namespace NPI_1 {
             initializeColors();
         }
 
+        /// <summary>
+        /// Changes the distance colors
+        /// </summary>
+        /// <param name="distance">Selects the color to be changed</param>
+        /// <param name="color">Gives the new color</param>
         public void setDistanceColor(int distance, Brush color) {
             if (distance_colors.Length > distance)
                 distance_colors[distance] = color;
         }
 
+        /// <summary>
+        /// Changes the time color
+        /// </summary>
+        /// <param name="color">Gives the new color</param>
         public void setTimeColor(Brush color) {
             time_color = color;
         }
 
+        /// <summary>
+        /// Changes the color to all pens
+        /// </summary>
+        /// <param name="timing">Change pens colors if it's timing</param>
         private void changePensTimeColor(bool timing) {
             Brush color;
             if (timing) 
@@ -114,6 +155,11 @@ namespace NPI_1 {
             }
         }
 
+        /// <summary>
+        /// Changes the pens colors according to skeleton joint's positions
+        /// </summary>
+        /// <param name="skeleton"></param>
+        /// <param name="actual_frame"></param>
         public void adjustColor(Skeleton skeleton, int actual_frame) {
             int frames = (int)(seconds * 30);
             situated = true;
@@ -123,7 +169,8 @@ namespace NPI_1 {
                 double distance = Math.Sqrt((double)((locations[i].X - joint_point.X) * (locations[i].X - joint_point.X) +
                                      (locations[i].Y - joint_point.Y) * (locations[i].Y - joint_point.Y) +
                                      (locations[i].Z - joint_point.Z) * (locations[i].Z - joint_point.Z)));
-
+                
+                //Change colors according to distance
                 if (distance < tolerance) {
                     pens[i].Brush = distance_colors[0];
                 }
@@ -138,12 +185,14 @@ namespace NPI_1 {
 
             if (situated) {
                 if(!timing) {
+                    // Starts to timing
                     timing = true;
                     first_frame = actual_frame;
                 }
                 else {
                     if(actual_frame-first_frame < frames) {
                         completed = false;
+                        // Use of the time_color if (actual_frame - first_frame) > (frames / 2)
                         changePensTimeColor((actual_frame - first_frame) > (frames / 2));
                     }
                     else {
@@ -152,36 +201,65 @@ namespace NPI_1 {
                 }
             }
             else {
+                // End of timing
                 timing = false;
                 completed = false;
                 first_frame = -1;
             }
         }
 
+        /// <summary>
+        /// Return if the gesture is completed
+        /// </summary>
+        /// <returns></returns>
         public bool isCompleted() {
             return completed;
         }
 
+        /// <summary>
+        /// Returns i Point
+        /// </summary>
+        /// <param name="i">Point identifier</param>
+        /// <returns></returns>
         public SkeletonPoint getLocation(int i) {
             return locations[i];
         }
 
+        /// <summary>
+        /// Draw a circle
+        /// </summary>
+        /// <param name="dc">drawing context</param>
+        /// <param name="radius">Radius of the circle</param>
+        /// <param name="i">Screen location of the centre</param>
         public void drawCircle(DrawingContext dc, float radius, int i = 0) {
             dc.DrawEllipse(null, pens[i], screen_locations[i], radius, radius);
         }
 
+        /// <summary>
+        /// Draw a circle
+        /// </summary>
+        /// <param name="dc">drawing context</param>
+        /// <param name="radius">Radius of the cross</param>
+        /// <param name="i">Screen location of the centre</param>
         public void drawCross(DrawingContext dc, float radius, int i = 0) {
             dc.DrawLine(pens[i], new Point(screen_locations[i].X - radius, screen_locations[i].Y + radius), new Point(screen_locations[i].X + radius, screen_locations[i].Y - radius));
             dc.DrawLine(pens[i], new Point(screen_locations[i].X - radius, screen_locations[i].Y - radius), new Point(screen_locations[i].X + radius, screen_locations[i].Y + radius));
         }
 
+        /// <summary>
+        /// Get a specific Pen
+        /// </summary>
+        /// <param name="i">Number of the pen</param>
         public Pen getPen(int i = 0) {
             return pens[i];
         }
 
+        /// <summary>
+        /// Get a specific Point
+        /// </summary>
+        /// <param name="i">Number of point </param>
         public Point getPoint(int i = 0) {
             return screen_locations[i];
         }
     }
-
 }

@@ -7,22 +7,14 @@
 namespace NPI_1 {
     using System;
     using System.IO;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
     using System.Windows;
-    using System.Windows.Controls;
-    using System.Windows.Data;
-    using System.Windows.Documents;
-    using System.Windows.Input;
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
-    using System.Windows.Navigation;
-    using System.Windows.Shapes;
     using Microsoft.Kinect;
     
-    
+    /// <summary>
+    /// Possible states of the application
+    /// </summary>
     enum States { SETTING_POSITION, CHECKING_GESTURE, MOVEMENT_ONE, MOVEMENT_TWO, MOVEMENT_THREE, MEASURING_USER };
 
     /// <summary>
@@ -38,47 +30,7 @@ namespace NPI_1 {
         /// Height of our output drawing
         /// </summary>
         private const float RenderHeight = 480.0f;
-
-        /// <summary>
-        /// Thickness of drawn joint lines
-        /// </summary>
-        private const double JointThickness = 3;
-
-        /// <summary>
-        /// Thickness of body center ellipse
-        /// </summary>
-        private const double BodyCenterThickness = 10;
-
-        /// <summary>
-        /// Thickness of clip edge rectangles
-        /// </summary>
-        private const double ClipBoundsThickness = 10;
-
-        /// <summary>
-        /// Brush used to draw skeleton center point
-        /// </summary>
-        private readonly Brush centerPointBrush = Brushes.Blue;
-
-        /// <summary>
-        /// Brush used for drawing joints that are currently tracked
-        /// </summary>
-        private readonly Brush trackedJointBrush = new SolidColorBrush(Color.FromArgb(255, 68, 192, 68));
-
-        /// <summary>
-        /// Brush used for drawing joints that are currently inferred
-        /// </summary>        
-        private readonly Brush inferredJointBrush = Brushes.Yellow;
-
-        /// <summary>
-        /// Pen used for drawing bones that are currently tracked
-        /// </summary>
-        private readonly Pen trackedBonePen = new Pen(Brushes.Green, 6);
-
-        /// <summary>
-        /// Pen used for drawing bones that are currently inferred
-        /// </summary>        
-        private readonly Pen inferredBonePen = new Pen(Brushes.Gray, 1);
-
+        
         /// <summary>
         /// Drawing group for skeleton rendering output
         /// </summary>
@@ -89,36 +41,56 @@ namespace NPI_1 {
         /// </summary>
         private DrawingImage imageSource;
 
-        // Sensor de Kinect que usaremos
+        /// <summary>
+        /// Kinect Sensor for the application
+        /// </summary>
         private KinectSensor my_KinectSensor;
 
-        // Gestos o posturas que el usuario realizará
+        /// <summary>
+        /// Gestures the user is going to do
+        /// </summary>
         Gesture exit;
         Gesture gesture;
         Gesture movement_1;
         Gesture movement_2;
         Gesture movement_3;
 
-        // Tolerancia del error de la posición
+        /// <summary>
+        /// Tolerance for the initial position
+        /// </summary>
         private double tolerance = 20;
 
-        // Estado de la aplicación
+        /// <summary>
+        /// State of the application
+        /// </summary>
         private States state = States.SETTING_POSITION;
 
+        /// <summary>
+        /// Information to know if the user is situated
+        /// </summary>
         bool situated = false;
         int first_wrong_frame = -1;
 
+        /// <summary>
+        /// Information to know if the user's been measured
+        /// </summary>
         bool measured = false;
         int first_frame_measure = -1;
+
+        /// <summary>
+        /// Measures of the user's arm
+        /// </summary>
         float arm = 0, forearm = 0;
         
-        // Alturas para situar al usuario
+        /// <summary>
+        /// Height to situate the user
+        /// </summary>
         private double height_up = 0.05 * RenderHeight;
 
-        // Pen para pintar las lineas para situar al usuario
+        /// <summary>
+        /// Pen to draw the situation line
+        /// </summary>
         private Pen situation_pen = new Pen(Brushes.Blue, 6);
-
-        private Skeleton[] skeletons = new Skeleton[0];
         
         /// <summary>
         /// Initializes a new instance of the MainWindow class.
@@ -126,7 +98,13 @@ namespace NPI_1 {
         public MainWindow() {
             InitializeComponent();
         }
-               
+
+        /// <summary>
+        /// Sum two SkeletonPoints
+        /// </summary>
+        /// <param name="first"> First point </param> 
+        /// <param name="second"> Second point </param>
+        /// <returns> Sum </returns> 
         public static SkeletonPoint sum(SkeletonPoint first, SkeletonPoint second) {
             SkeletonPoint sum = first;
             sum.X += second.X;
@@ -135,6 +113,14 @@ namespace NPI_1 {
             return sum;
         }
 
+        /// <summary>
+        /// Sum two 3D points, one given by a SkeletonPoint and the other by its coordinates
+        /// </summary>
+        /// <param name="point">SkeletonPoint to sum</param>
+        /// <param name="x"> 1st coordinate</param>
+        /// <param name="y"> 2nd coordinate</param>
+        /// <param name="z"> 3rd coordinate</param>
+        /// <returns> Sum </returns>
         public static SkeletonPoint sum(SkeletonPoint point, double x, double y, double z) {
             SkeletonPoint sum = point;
             sum.X +=(float)x;
@@ -192,6 +178,11 @@ namespace NPI_1 {
 
         }
 
+        /// <summary>
+        /// Show the color image that the sensor is receiving
+        /// </summary>
+        /// <param name="sender">object sending the event</param>
+        /// <param name="e">event arguments</param>
         private void Sensor_ColorFrameReady(object sender, ColorImageFrameReadyEventArgs e) {
             using (ColorImageFrame es = e.OpenColorImageFrame()) {
                 if (es != null) {
@@ -201,6 +192,7 @@ namespace NPI_1 {
                 }
             }
         }
+        
 
         /// <summary>
         /// Execute shutdown tasks
@@ -214,15 +206,17 @@ namespace NPI_1 {
             for (int intCounter = App.Current.Windows.Count - 1; intCounter >= 0; intCounter--)
                 App.Current.Windows[intCounter].Close();
         }
-
+        
         /// <summary>
         /// Event handler for Kinect sensor's SkeletonFrameReady event
+        /// Draw the guides according to the state
         /// </summary>
         /// <param name="sender">object sending the event</param>
         /// <param name="e">event arguments</param>
         private void SensorSkeletonFrameReady(object sender, SkeletonFrameReadyEventArgs e) {
-            skeletons = new Skeleton[0];
+            Skeleton[] skeletons = new Skeleton[0];
 
+            // Copy the Skeleton data to skeletons
             using (SkeletonFrame skeletonFrame = e.OpenSkeletonFrame()) {
                 if (skeletonFrame != null) {
                     skeletons = new Skeleton[skeletonFrame.SkeletonArrayLength];
@@ -231,10 +225,12 @@ namespace NPI_1 {
             }
 
             using (DrawingContext dc = this.drawingGroup.Open()) {
+                
                 // Draw a transparent background to set the render size
                 dc.DrawRectangle(Brushes.Transparent, null, new Rect(0.0, 0.0, RenderWidth, RenderHeight));
                 bool skeleton_tracked = false;
 
+                // Find a tracked object of Skeleton class 
                 if (skeletons.Length != 0) {
                     foreach (Skeleton skel in skeletons) {
                         if (skel.TrackingState == SkeletonTrackingState.Tracked) {
@@ -244,9 +240,14 @@ namespace NPI_1 {
                     }
                 }
 
-                if (skeletons.Length == 0 || !skeleton_tracked)
+                // Change colors and states if no skeleton is recorded
+                if (skeletons.Length == 0 || !skeleton_tracked) {
                     situation_pen.Brush = Brushes.DarkRed;
+                    this.measured = false;
+                    state = States.SETTING_POSITION;
+                }
 
+                // Draw the guides
                 switch (state) {
                     case States.SETTING_POSITION:
                         dc.DrawLine(situation_pen, new Point(0.4 * RenderWidth, 0.05 * RenderHeight), new Point(0.6 * RenderWidth, 0.05 * RenderHeight));
@@ -293,7 +294,10 @@ namespace NPI_1 {
         }
       
 
-
+        /// <summary>
+        /// Determine gestures and guides positions
+        /// </summary>
+        /// <param name="skel">Skeleton tracked to determine guides positions</param>
         private void initializeElements(Skeleton skel) {
             SkeletonPoint[] gesture_points = new SkeletonPoint[2];
             gesture_points[0] = sum(skel.Joints[JointType.ShoulderRight].Position, 0.9*arm, 0.9*forearm, -0.1);
@@ -304,8 +308,8 @@ namespace NPI_1 {
             gesture = new Gesture(gesture_points, gesture_joints, my_KinectSensor, 2);
 
             movement_1 = new Gesture(sum(skel.Joints[JointType.HipRight].Position, 0.1, -0.1, 0), JointType.HandRight, my_KinectSensor, 2);
-            movement_2 = new Gesture(sum(skel.Joints[JointType.ShoulderLeft].Position, -0.05, 0, -0.8*(arm+ forearm)), JointType.HandRight, my_KinectSensor, 2);
-            movement_3 = new Gesture(sum(skel.Joints[JointType.ShoulderRight].Position, 0, 0, -0.9*(arm+ forearm)), JointType.HandRight, my_KinectSensor, 2);
+            movement_2 = new Gesture(sum(skel.Joints[JointType.ShoulderLeft].Position, -0.05, 0, -0.9*(arm+ forearm)), JointType.HandRight, my_KinectSensor, 2);
+            movement_3 = new Gesture(sum(skel.Joints[JointType.ShoulderRight].Position, -0.05, 0, -(arm+ forearm)), JointType.HandRight, my_KinectSensor, 2);
 
             exit = new Gesture(sum(skel.Joints[JointType.Head].Position, -2*(arm+ forearm), -0.05, 0), JointType.HandLeft, my_KinectSensor, 3);
             exit.setDistanceColor(0, Brushes.Purple);
@@ -316,12 +320,19 @@ namespace NPI_1 {
             situated = true;
         }
 
+        /// <summary>
+        /// Measure the user to give a more personalizated positions
+        /// </summary>
+        /// <param name="skel">Skeleton tracked to determine user measures</param>
+        /// <param name="actual_frame">Number of the actual frame to determine the waiting time</param>
         private void measureUser(Skeleton skel, int actual_frame) {
             this.statusBarText.Text = "Ponte en esta posición. \n Vamos a medirte.";
             this.measure_imagen.Visibility = Visibility.Visible;
+            // Show the guide image
             this.measure_imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/img.png")));
 
             if (first_frame_measure == -1) {
+                // Begin the count
                 first_frame_measure = actual_frame;
             }
             if (actual_frame - first_frame_measure > 120) {
@@ -334,14 +345,19 @@ namespace NPI_1 {
                 forearm = (float)Math.Sqrt((double)(Math.Pow((right_wrist.X - right_elbow.X), 2) +
                     Math.Pow((right_wrist.Y - right_elbow.Y), 2) +
                     Math.Pow((right_wrist.Z - right_elbow.Z), 2)));
-
+                
                 measured = true;
+                first_frame_measure = -1;   // To ensure that the next time that an user need to be measured, he is
                 state = States.CHECKING_GESTURE;
             }
         }
 
 
-
+        /// <summary>
+        /// Acts according to user positions and application state
+        /// </summary>
+        /// <param name="sender">object sending the event</param>
+        /// <param name="e">event arguments</param>
         private void detect_skeletons_position(object sender, SkeletonFrameReadyEventArgs e) {
             Skeleton[] skeletons = new Skeleton[0];
             int actual_frame=-1;
@@ -355,6 +371,7 @@ namespace NPI_1 {
             }
 
             if (skeletons.Length != 0) {
+                // To ensure a Skeleton is tracked
                 bool human_found = false;
                 Skeleton skel = skeletons[0];
                 for (int i = 0; i < skeletons.Length && !human_found; i++) {
@@ -364,6 +381,7 @@ namespace NPI_1 {
                     }
                 }
 
+                // The head point projection to the screen is compared with the guide line
                 Point point_head = SkeletonPointToScreen(skel.Joints[JointType.Head].Position);
 
                 if (state == States.SETTING_POSITION) {
@@ -372,12 +390,13 @@ namespace NPI_1 {
                     if (Math.Abs(point_head.Y - height_up) < tolerance && Math.Abs(RenderWidth * 0.5 - point_head.X) < tolerance) {
                         situation_pen = new Pen(Brushes.Green, 6);
 
-                        if (!measured) 
+                        if (!measured)
                             state = States.MEASURING_USER;
-                        else 
+                        else
                             state = States.CHECKING_GESTURE;
                     }
                     else {
+                        // We give the instructions to situate the user
                         situation_pen = new Pen(Brushes.Red, 6);
 
                         if(actual_frame - first_wrong_frame < 60) {
@@ -444,6 +463,7 @@ namespace NPI_1 {
                         state = States.MOVEMENT_ONE;
 
                 }
+
 
                 if (situated && measured) {
                     exit.adjustColor(skel,actual_frame);
