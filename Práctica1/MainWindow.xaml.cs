@@ -1,8 +1,32 @@
 ﻿//------------------------------------------------------------------------------
 // <copyright file="MainWindow.xaml.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
+//     Methods WindowLoaded, SkeletonPointToScreen
+//     Variables RenderWidth, RenderHeight, drawingGroup
+//     XAML Code
 // </copyright>
 //------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+// Authors: Anabel Gómez Ríos, Jacinto Carrasco Castillo
+// Date: 30-15-2015
+//------------------------------------------------------------------------------
+
+/*    This file is part of NPI_1.
+    NPI_1 is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Foobar is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
+    GNU General Public License for more details.
+
+    See<http://www.gnu.org/licenses/>.
+*/
+
+
 
 namespace NPI_1 {
     using System;
