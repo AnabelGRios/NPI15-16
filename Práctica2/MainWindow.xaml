@@ -1,0 +1,34 @@
+﻿<Window x:Class="NPI_2.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:NPI_2"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="650 " Width="1024" Loaded="Window_Loaded">
+    <Grid Name="layoutGrid" Margin="10 0 10 0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <DockPanel Grid.Row="0" Margin="0 0 0 20">
+        </DockPanel>
+        <Viewbox Grid.Row="1" Stretch="Uniform" HorizontalAlignment="Center">
+            <Image Name="video_image" Width="640" Height="480"/>
+        </Viewbox>
+        <Viewbox Grid.Row="1" Stretch="Uniform" HorizontalAlignment="Center">
+            <Image Name="draw_image" Width="640" Height="480"/>
+        </Viewbox>
+        <StatusBar Grid.Row="1" FontSize="45" HorizontalAlignment="Center" Name="statusBar" VerticalAlignment="Center" Background="Transparent" Foreground="GreenYellow" Margin="232,167,231,227" Height="205" Width="533">
+            <StatusBarItem Padding="0 0 0 10" RenderTransformOrigin="0.506,0.57">
+                <TextBlock Name="statusBarText" TextAlignment="Center" Margin="2 0 0 0" RenderTransformOrigin="1.048,2.887" Height="205" Width="544"></TextBlock>
+            </StatusBarItem>
+        </StatusBar>
+        <Image Name="imagen" Height="422" Margin="0,167,764,0" Stretch="UniformToFill"  Visibility="Hidden"
+           VerticalAlignment="Top" Grid.Row="1"/>
+        <Image Name="measure_imagen" Height="316" Margin="10,273,673,0" Stretch="UniformToFill"  Visibility="Hidden"
+           VerticalAlignment="Top" Grid.Row="1"/>
+    </Grid>
+</Window>
