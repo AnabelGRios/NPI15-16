@@ -27,8 +27,9 @@ namespace NPI_2 {
         private float frequency;    // Frequency the object is shown
         Image image;    // The object that will be shown
 
+
         /// <summary>
-        /// Constructor for the class
+        /// Constructor of the class
         /// </summary>
         /// <param name="img"></param>
         /// <param name="picture"></param>
@@ -39,14 +40,26 @@ namespace NPI_2 {
             frequency = freq;
         }
 
+        /// <summary>
+        /// This metod sets the position where the picture will show.
+        /// </summary>
+        /// <param name="img"></param>
         public void setPosition(Image img) {
             image = img;
         }
 
+        /// <summary>
+        /// This metod sets the picture that will be show.
+        /// </summary>
+        /// <param name="picture"></param>
         public void setPicture(string picture) {
             image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../" + picture)));
         }
 
+        /// <summary>
+        /// This metod sets the frequency, in seconds, with which the picture will show.
+        /// </summary>
+        /// <param name="new_freq"></param>
         public void setFrequency(float new_freq) {
             frequency = new_freq;
         }
