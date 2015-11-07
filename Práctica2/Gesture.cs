@@ -1,6 +1,6 @@
 ﻿//------------------------------------------------------------------------------
 // Authors: Anabel Gómez Ríos, Jacinto Carrasco Castillo
-// Date: 30-10-2015
+// Date: 30-15-2015
 //------------------------------------------------------------------------------
 
 /*    This file is part of NPI_2.
@@ -114,7 +114,7 @@ namespace NPI_2 {
             this.seconds = seconds;
             this.tolerance = tolerance;
 
-            
+
             initializeColors();
         }
 
@@ -171,12 +171,12 @@ namespace NPI_2 {
         /// <param name="timing">Change pens colors if it's timing</param>
         private void changePensTimeColor(bool timing) {
             Brush color;
-            if (timing) 
+            if (timing)
                 color = time_color;
             else
                 color = distance_colors[0];
 
-            foreach(Pen pen in pens) {
+            foreach (Pen pen in pens) {
                 pen.Brush = color;
             }
         }
@@ -190,12 +190,12 @@ namespace NPI_2 {
             int frames = (int)(seconds * 30);
             situated = true;
 
-            for (int i = 0; i < locations.Length; i++){
+            for (int i = 0; i < locations.Length; i++) {
                 SkeletonPoint joint_point = skeleton.Joints[joints[i]].Position;
                 double distance = Math.Sqrt((double)((locations[i].X - joint_point.X) * (locations[i].X - joint_point.X) +
                                      (locations[i].Y - joint_point.Y) * (locations[i].Y - joint_point.Y) +
                                      (locations[i].Z - joint_point.Z) * (locations[i].Z - joint_point.Z)));
-                
+
                 //Change colors according to distance
                 if (distance < tolerance) {
                     pens[i].Brush = distance_colors[0];
@@ -210,13 +210,13 @@ namespace NPI_2 {
             }
 
             if (situated) {
-                if(!timing) {
+                if (!timing) {
                     // Starts to timing
                     timing = true;
                     first_frame = actual_frame;
                 }
                 else {
-                    if(actual_frame-first_frame < frames) {
+                    if (actual_frame - first_frame < frames) {
                         completed = false;
                         // Use of the time_color if (actual_frame - first_frame) > (frames / 2)
                         changePensTimeColor((actual_frame - first_frame) > (frames / 2));
@@ -269,7 +269,7 @@ namespace NPI_2 {
         /// <param name="i">Screen location of the centre</param>
         public void drawCross(DrawingContext dc, float radius, int i = 0) {
             Point centre = screen_locations[i];
-            if(centre.X < radius) {
+            if (centre.X < radius) {
                 centre.X = radius;
             }
             if (centre.Y < radius) {
@@ -307,3 +307,4 @@ namespace NPI_2 {
         }
     }
 }
+
