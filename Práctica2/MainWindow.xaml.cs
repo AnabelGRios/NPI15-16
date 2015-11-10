@@ -39,7 +39,7 @@ namespace NPI_2 {
     /// <summary>
     /// Possible states of the application
     /// </summary>
-    enum States { SETTING_POSITION, CHECKING_GESTURE, MOVEMENT_ONE, MOVEMENT_TWO, MOVEMENT_THREE, MEASURING_USER };
+    enum States { SETTING_POSITION, MEASURING_USER, PLAYING, PAUSED };
 
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -75,15 +75,20 @@ namespace NPI_2 {
         /// </summary>
         Gesture exit;
         Gesture measuring;
-        Gesture gesture;
-        Gesture movement_1;
-        Gesture movement_2;
-        Gesture movement_3;
+        Gesture pause;
+
+        Gesture shoot_0;
+        Gesture shoot_1;
 
         /// <summary>
         /// Tolerance for the initial position
         /// </summary>
         private double tolerance = 20;
+
+        /// <summary>
+        /// Tolerance for the shoots
+        /// </summary>
+        private double tolerance_shoot = 0.05;
 
         /// <summary>
         /// State of the application
@@ -101,6 +106,12 @@ namespace NPI_2 {
         /// </summary>
         bool measured = false;
         int first_frame_measure = -1;
+
+        /// <summary>
+        /// Information to know if the shot can be completed
+        /// </summary>
+        bool shooting = false;
+        int first_frame_shooting = -1;
 
         /// <summary>
         /// Measures of the user's arm
@@ -157,6 +168,15 @@ namespace NPI_2 {
         public int getRandomNumber(int max_number) {
             Random random = new Random();
             return (random.Next() % max_number) + 1;
+        }
+
+
+        public double distance(SkeletonPoint a, SkeletonPoint b) {
+            double distance = Math.Sqrt((double)(Math.Pow((a.X - b.X), 2) +
+                Math.Pow((a.Y - b.Y), 2) +
+                Math.Pow((a.Z - b.Z), 2)));
+
+            return distance;
         }
 
         /// <summary>
@@ -238,6 +258,52 @@ namespace NPI_2 {
         }
 
         /// <summary>
+        /// Draw the scene
+        /// </summary>
+        /// <param name="e">event arguments</param>
+        private void DrawScene(object sender) {
+
+            using (DrawingContext dc = this.drawingGroup.Open()) {
+
+                // Draw a transparent background to set the render size
+                dc.DrawRectangle(Brushes.Transparent, null, new Rect(0.0, 0.0, RenderWidth, RenderHeight));
+                
+                // Draw the guides
+                switch (state) {
+                    case States.SETTING_POSITION:
+                        dc.DrawLine(situation_pen, new Point(0.4 * RenderWidth, 0.05 * RenderHeight), new Point(0.6 * RenderWidth, 0.05 * RenderHeight));
+                        break;
+                    case States.MEASURING_USER:
+                        measuring.drawCircle(dc, 10, 0);
+                        measuring.drawCircle(dc, 10, 1);
+                        measuring.drawCircle(dc, 10, 2);
+                        measuring.drawCircle(dc, 10, 3);
+                        break;
+                    case States.PAUSED:
+                        if (shooting) {
+                            shoot_1.drawCircle(dc, 20);
+                        }
+                        else {
+                            shoot_0.drawCircle(dc, 10);
+                        }
+
+                        break;
+                }
+
+                if (measured) {
+                    exit.drawCross(dc, 10);
+
+                    if (exit.isCompleted())
+                        this.WindowClosing(sender, new System.ComponentModel.CancelEventArgs());
+                }
+
+                // prevent drawing outside of our render area
+                this.drawingGroup.ClipGeometry = new RectangleGeometry(new Rect(0.0, 0.0, RenderWidth, RenderHeight));
+
+            }
+        }
+        
+        /// <summary>
         /// Event handler for Kinect sensor's SkeletonFrameReady event
         /// Draw the guides according to the state
         /// </summary>
@@ -263,57 +329,14 @@ namespace NPI_2 {
                 }
             }
 
-            using (DrawingContext dc = this.drawingGroup.Open()) {
-
-                // Draw a transparent background to set the render size
-                dc.DrawRectangle(Brushes.Transparent, null, new Rect(0.0, 0.0, RenderWidth, RenderHeight));
-
-                // Change colors and states if no skeleton is recorded
-                if (skeletons.Length == 0 || !skeleton_tracked) {
-                    situation_pen.Brush = Brushes.DarkRed;
-                    this.measured = false;  //Remeasure the user if it's not captured by the sensor
-                    state = States.SETTING_POSITION;
-                }
-
-                // Draw the guides
-                switch (state) {
-                    case States.SETTING_POSITION:
-                        dc.DrawLine(situation_pen, new Point(0.4 * RenderWidth, 0.05 * RenderHeight), new Point(0.6 * RenderWidth, 0.05 * RenderHeight));
-                        break;
-                    case States.MEASURING_USER:
-                        measuring.drawCircle(dc, 10, 0);
-                        measuring.drawCircle(dc, 10, 1);
-                        measuring.drawCircle(dc, 10, 2);
-                        measuring.drawCircle(dc, 10, 3);
-                        break;
-                    case States.CHECKING_GESTURE:
-                        gesture.drawCircle(dc, 20);
-                        gesture.drawCircle(dc, 10, 1);
-                        break;
-                    case States.MOVEMENT_ONE:
-                        movement_1.drawCircle(dc, 20);
-                        break;
-                    case States.MOVEMENT_TWO:
-                        movement_2.drawCircle(dc, 20);
-                        dc.DrawLine(movement_2.getPen(), movement_2.getPoint(), movement_1.getPoint());
-                        break;
-                    case States.MOVEMENT_THREE:
-                        movement_3.drawCircle(dc, 20);
-                        dc.DrawLine(movement_3.getPen(), movement_2.getPoint(), movement_3.getPoint());
-                        break;
-                }
-
-                if (measured) {
-                    exit.drawCross(dc, 10);
-
-                    if (exit.isCompleted())
-                        this.WindowClosing(sender, new System.ComponentModel.CancelEventArgs());
-                }
-
-                // prevent drawing outside of our render area
-                this.drawingGroup.ClipGeometry = new RectangleGeometry(new Rect(0.0, 0.0, RenderWidth, RenderHeight));
-
+            // Change colors and states if no skeleton is recorded
+            if (skeletons.Length == 0 || !skeleton_tracked) {
+                situation_pen.Brush = Brushes.DarkRed;
+                this.measured = false;                      //Remeasure the user if it's not captured by the sensor
+                state = States.SETTING_POSITION;
             }
+
+            DrawScene(sender);
 
         }
 
@@ -334,19 +357,24 @@ namespace NPI_2 {
         /// </summary>
         /// <param name="skel">Skeleton tracked to determine guides positions</param>
         private void initializeElements(Skeleton skel) {
-            SkeletonPoint[] gesture_points = new SkeletonPoint[2];
-            gesture_points[0] = sum(skel.Joints[JointType.ShoulderRight].Position, 0.9 * arm, 0.9 * forearm, -0.1);
-            gesture_points[1] = sum(skel.Joints[JointType.ShoulderRight].Position, 0.9 * arm, -0.1, -0.1);
-            JointType[] gesture_joints = new JointType[2];
-            gesture_joints[0] = JointType.HandRight;
-            gesture_joints[1] = JointType.ElbowRight;
-            gesture = new Gesture(gesture_points, gesture_joints, my_KinectSensor, 2);
+            SkeletonPoint[] pause_points = new SkeletonPoint[2];
+            pause_points[0] = sum(skel.Joints[JointType.HipRight].Position, 0.2, 0, -0.1);
+            pause_points[1] = sum(skel.Joints[JointType.HipLeft].Position, -0.2, 0, -0.1);
+            JointType[] pause_joints = new JointType[2];
+            pause_joints[0] = JointType.HandRight;
+            pause_joints[1] = JointType.HandLeft;
+            pause = new Gesture(pause_points, pause_joints, my_KinectSensor, 2);
 
-            movement_1 = new Gesture(sum(skel.Joints[JointType.HipRight].Position, 0.1, -0.1, 0), JointType.HandRight, my_KinectSensor, 2);
-            movement_2 = new Gesture(sum(skel.Joints[JointType.ShoulderLeft].Position, -0.05, 0, -(arm + forearm)), JointType.HandRight, my_KinectSensor, 2);
-            movement_3 = new Gesture(sum(skel.Joints[JointType.ShoulderRight].Position, -0.05, 0, -1.05 * (arm + forearm)), JointType.HandRight, my_KinectSensor, 2);
+            pause.setDistanceColor(1, Brushes.LightGray);
+            pause.setDistanceColor(2, Brushes.Transparent);
 
-            exit = new Gesture(sum(skel.Joints[JointType.Head].Position, -2 * (arm + forearm), -0.05, 0), JointType.HandLeft, my_KinectSensor, 3);
+            SkeletonPoint hand = skel.Joints[JointType.HandRight].Position;
+            SkeletonPoint elbow = skel.Joints[JointType.ElbowRight].Position;
+
+            shoot_0 = new Gesture(hand, JointType.HandRight,my_KinectSensor,1);
+            shoot_1 = new Gesture(sum(elbow, 0.05 * Math.Sign(hand.X - elbow.X), 0.9*forearm, 0.9*forearm), JointType.HandRight, my_KinectSensor, 0.1f);
+            
+            exit = new Gesture(sum(skel.Joints[JointType.Head].Position, -2 * (arm + forearm), -0.05, 0), JointType.HandLeft, my_KinectSensor, 1);
             exit.setDistanceColor(0, Brushes.Purple);
             exit.setDistanceColor(1, Brushes.Blue);
             exit.setDistanceColor(2, Brushes.Gray);
@@ -367,12 +395,9 @@ namespace NPI_2 {
             SkeletonPoint right_shoulder = skel.Joints[JointType.ShoulderRight].Position;
             SkeletonPoint right_elbow = skel.Joints[JointType.ElbowRight].Position;
             SkeletonPoint right_wrist = skel.Joints[JointType.WristRight].Position;
-            arm = (float)Math.Sqrt((double)(Math.Pow((right_shoulder.X - right_elbow.X), 2) +
-                Math.Pow((right_shoulder.Y - right_elbow.Y), 2) +
-                Math.Pow((right_shoulder.Z - right_elbow.Z), 2)));
-            forearm = (float)Math.Sqrt((double)(Math.Pow((right_wrist.X - right_elbow.X), 2) +
-                Math.Pow((right_wrist.Y - right_elbow.Y), 2) +
-                Math.Pow((right_wrist.Z - right_elbow.Z), 2)));
+
+            arm = (float)distance(right_shoulder, right_elbow);
+            forearm = (float)distance(right_wrist, right_elbow);
 
             SkeletonPoint[] measuring_points = new SkeletonPoint[4];
             measuring_points[0] = sum(skel.Joints[JointType.ShoulderRight].Position, arm + 0.05, -0.05, 0);
@@ -387,7 +412,7 @@ namespace NPI_2 {
                 measuring_joints[1] = JointType.HandRight;
                 measuring_joints[2] = JointType.ElbowLeft;
                 measuring_joints[3] = JointType.HandLeft;
-                measuring = new Gesture(measuring_points, measuring_joints, my_KinectSensor, 3);
+                measuring = new Gesture(measuring_points, measuring_joints, my_KinectSensor, 1);
 
                 // Begin the count
                 first_frame_measure = actual_frame;
@@ -398,7 +423,7 @@ namespace NPI_2 {
             if (measuring.isCompleted()) {
                 measured = true;
                 first_frame_measure = -1;   // To ensure that the next time that an user need to be measured, he is
-                state = States.CHECKING_GESTURE;
+                state = States.PAUSED;
             }
         }
 
@@ -421,7 +446,7 @@ namespace NPI_2 {
                     if (!measured)
                         state = States.MEASURING_USER;
                     else
-                        state = States.CHECKING_GESTURE;
+                        state = States.PAUSED;
 
                     situated = true;
                 }
@@ -463,46 +488,46 @@ namespace NPI_2 {
                 measureUser(skel, actual_frame);
                 initializeElements(skel);
             }
-
-            if (state == States.CHECKING_GESTURE) {
-                this.statusBarText.Text = "";
-                this.measure_imagen.Visibility = Visibility.Hidden;
-                this.imagen.Visibility = Visibility.Visible;
-                this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/gesto.png")));
-
-                gesture.adjustColor(skel, actual_frame);
-
-                if (gesture.isCompleted())
-                    state = States.MOVEMENT_ONE;
-
-            }
-            else if (state == States.MOVEMENT_ONE) {
-                this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/movimiento1.png")));
-                movement_1.adjustColor(skel, actual_frame);
-
-                if (movement_1.isCompleted())
-                    state = States.MOVEMENT_TWO;
-
-            }
-            else if (state == States.MOVEMENT_TWO) {
-                this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/movimiento2.png")));
-                movement_2.adjustColor(skel, actual_frame);
-
-                if (movement_2.isCompleted())
-                    state = States.MOVEMENT_THREE;
-
-            }
-            else if (state == States.MOVEMENT_THREE) {
-                this.imagen.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/movimiento3.png")));
-                movement_3.adjustColor(skel, actual_frame);
-
-                if (movement_3.isCompleted())
-                    state = States.MOVEMENT_ONE;
-
+            if( state== States.PAUSED) {
+                detect_shoot_movement(skel, actual_frame);
             }
 
             if (measured)
                 exit.adjustColor(skel, actual_frame);
         }
+
+
+        private void detect_shoot_movement(Skeleton skel, int actual_frame) {
+            shoot_0.adjustColor(skel, actual_frame);
+
+            if (!shooting && !shoot_0.isSituated()) {
+                SkeletonPoint hand = skel.Joints[JointType.HandRight].Position;
+                shoot_0.adjustLocations(hand);
+            }
+
+            if (shoot_0.isCompleted()) {
+                shooting = true;
+                first_frame_shooting = actual_frame;
+
+                SkeletonPoint hand = skel.Joints[JointType.HandRight].Position;
+                SkeletonPoint elbow = skel.Joints[JointType.ElbowRight].Position;
+
+                shoot_1.adjustLocations(sum(elbow, -0.1 * Math.Sign(hand.X - elbow.X), 0.7 * forearm, 0));
+            }
+
+            if (shooting) {
+                if (actual_frame - first_frame_shooting > 120) {
+                    shooting = false;
+                }
+
+                shoot_1.adjustColor(skel, actual_frame);
+                if (shoot_1.isCompleted()) {
+                    measured = false;
+                    state = States.MEASURING_USER;
+                }
+            }
+        }
     }
+
+
 }

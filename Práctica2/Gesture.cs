@@ -243,6 +243,14 @@ namespace NPI_2 {
         }
 
         /// <summary>
+        /// Return if the joint is situated
+        /// </summary>
+        /// <returns></returns>
+        public bool isSituated() {
+            return situated;
+        }
+
+        /// <summary>
         /// Returns i Point
         /// </summary>
         /// <param name="i">Point identifier</param>
@@ -294,6 +302,15 @@ namespace NPI_2 {
         public Point getPoint(int i = 0) {
             return screen_locations[i];
         }
+        /// <summary>
+        /// Adjust locations of the gesture
+        /// </summary>
+        /// <param name="new_locations">New locations of the gesture</param>
+        public void adjustLocations(SkeletonPoint new_location) {
+            locations[0] = new_location;
+            screen_locations[0] = SkeletonPointToScreen(new_location, sensor);
+        }
+
 
         /// <summary>
         /// Adjust locations of the gesture
