@@ -89,6 +89,7 @@ namespace NPI_2 {
         /// Tolerance for the shoots
         /// </summary>
         private double tolerance_shoot = 0.05;
+        private Point shoot_objective;
 
         /// <summary>
         /// State of the application
@@ -280,12 +281,9 @@ namespace NPI_2 {
                         measuring.drawCircle(dc, 10, 3);
                         break;
                     case States.PAUSED:
-                        if (shooting) {
+                        dc.DrawEllipse(null, situation_pen, shoot_objective, 10, 10);
+                        if (shooting) 
                             shoot_1.drawCircle(dc, 20);
-                        }
-                        else {
-                            shoot_0.drawCircle(dc, 10);
-                        }
 
                         break;
                 }
@@ -496,12 +494,29 @@ namespace NPI_2 {
                 exit.adjustColor(skel, actual_frame);
         }
 
+        private Point compute_shoot(SkeletonPoint hand, SkeletonPoint elbow){
+            Point point = new Point(-1,-1);
+            SkeletonPoint proyection_point = new SkeletonPoint();
+            proyection_point.Z = 1.1f;
+
+            if (elbow.Z - hand.Z > 0.05f) {
+                double factor = (proyection_point.Z - hand.Z) / (elbow.Z - hand.Z);
+                proyection_point.X = (float) (elbow.X + factor * (elbow.X - hand.X));
+                proyection_point.Y = (float) (elbow.Y + factor * (elbow.Y - hand.Y));
+
+                point = SkeletonPointToScreen(proyection_point);
+            }
+
+            return point;
+        }
+
 
         private void detect_shoot_movement(Skeleton skel, int actual_frame) {
             shoot_0.adjustColor(skel, actual_frame);
+            SkeletonPoint hand = skel.Joints[JointType.HandRight].Position;
+            SkeletonPoint elbow = skel.Joints[JointType.ElbowRight].Position;
 
             if (!shooting && !shoot_0.isSituated()) {
-                SkeletonPoint hand = skel.Joints[JointType.HandRight].Position;
                 shoot_0.adjustLocations(hand);
             }
 
@@ -509,11 +524,11 @@ namespace NPI_2 {
                 shooting = true;
                 first_frame_shooting = actual_frame;
 
-                SkeletonPoint hand = skel.Joints[JointType.HandRight].Position;
-                SkeletonPoint elbow = skel.Joints[JointType.ElbowRight].Position;
-
                 shoot_1.adjustLocations(sum(elbow, -0.1 * Math.Sign(hand.X - elbow.X), 0.7 * forearm, 0));
             }
+
+
+            shoot_objective = compute_shoot(hand, elbow);
 
             if (shooting) {
                 if (actual_frame - first_frame_shooting > 120) {
