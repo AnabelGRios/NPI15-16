@@ -127,6 +127,16 @@ namespace NPI_2 {
 		/// </sumary>
 		float frequency = 5;
 
+		/// <summary>
+		/// Actual image first frame
+		/// </summary>
+		int actual_img_first_frame = -1;
+
+		/// <summary>
+		/// Actual image
+		/// </summary>
+		Image actual_image;
+
         ///
         private Calculator calculator = new Calculator();
 
@@ -140,7 +150,6 @@ namespace NPI_2 {
         /// <summary>
 
 		public void changeImage(Image img, int num) {
-			img.Visibility = Visibility.Visible;
 			string number = num.ToString();
 			string name = "../../images/" + number + ".png";
 			img.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath(name)));
@@ -158,6 +167,7 @@ namespace NPI_2 {
 				new_position = imageDalton3;
 
 			new_position.Visibility = Visibility.Visible;
+
 			return new_position;
 		}
 
@@ -356,6 +366,11 @@ namespace NPI_2 {
             exit.setDistanceColor(1, Brushes.Blue);
             exit.setDistanceColor(2, Brushes.Gray);
             exit.setTimeColor(Brushes.Red);
+
+			imageDalton1.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/JoeDalton.png")));
+			imageDalton2.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/JoeDalton.png")));
+			imageDalton3.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/JoeDalton.png")));
+			actual_image = imageDalton1;
         }
 
         /// <summary>
@@ -449,6 +464,7 @@ namespace NPI_2 {
                     }
 
                 }
+
             }
             else if (Math.Abs(point_head.Y - height_up) > tolerance || Math.Abs(RenderWidth * 0.5 - point_head.X) > tolerance) {
                 if (actual_frame - first_wrong_frame > 30)
@@ -469,7 +485,30 @@ namespace NPI_2 {
             }
 
 			if (state == States.PLAYING) {
+				int shot_frame = -1;
+				Point shot_point;
+				bool dead = false;
+				life_image.Visibility = Visibility.Visible;
 				shoot.detect_shoot_movement(skel, actual_frame);
+				shot_point = shoot.getShotPointAndFrame(shot_frame);
+
+				if (shot_frame > actual_img_first_frame) {
+					if(shot_point != new Point(-1,-1))
+						dead = isDead(shot_point, actual_image);
+				}
+
+				if (actual_frame - actual_img_first_frame > 250 || dead) {
+					actual_image = changePosition(actual_image);
+					actual_img_first_frame = actual_frame;
+					if (!dead) {
+						life--;
+						if (life < 0)
+							state = States.PAUSED;
+						else
+							changeImage(life_image, life);
+					}
+				}
+
 			}
 
             if( state== States.PAUSED) {

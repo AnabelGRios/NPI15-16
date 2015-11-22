@@ -51,6 +51,11 @@ namespace NPI_2 {
             this.forearm = forearm;
         }
 
+		public Point getShotPointAndFrame(int frame_number) {
+			frame_number = first_frame_shoot;
+			return actual_shot_point;
+		}
+
         public Point compute_shoot(SkeletonPoint hand, SkeletonPoint elbow) {
             Point point = new Point(-1, -1);
             SkeletonPoint proyection_point = new SkeletonPoint();
