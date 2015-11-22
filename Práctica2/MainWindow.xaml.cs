@@ -86,12 +86,6 @@ namespace NPI_2 {
         private double tolerance = 20;
 
         /// <summary>
-        /// Tolerance for the shoots
-        /// </summary>
-        private double tolerance_shoot = 0.05;
-        private Point shoot_objective;
-
-        /// <summary>
         /// State of the application
         /// </summary>
         private States state = States.SETTING_POSITION;
@@ -111,8 +105,20 @@ namespace NPI_2 {
         /// <summary>
         /// Information to know if the shot can be completed
         /// </summary>
+        bool pointed = false;
         bool shooting = false;
         int first_frame_shooting = -1;
+
+        /// <summary>
+        /// Tolerance for the shoots
+        /// </summary>
+        private double tolerance_shoot = 0.05;
+        private Point shoot_objective;
+
+        private int first_frame_shoot = -1;
+        private Point actual_shot_point;
+
+        private Pen shoot_pen = new Pen(Brushes.Black, 6);
 
         /// <summary>
         /// Measures of the user's arm
@@ -172,8 +178,8 @@ namespace NPI_2 {
         }
 
 
-        public double distance(SkeletonPoint a, SkeletonPoint b) {
-            double distance = Math.Sqrt((double)(Math.Pow((a.X - b.X), 2) +
+        public float distance(SkeletonPoint a, SkeletonPoint b) {
+            float distance = (float) Math.Sqrt((double)(Math.Pow((a.X - b.X), 2) +
                 Math.Pow((a.Y - b.Y), 2) +
                 Math.Pow((a.Z - b.Z), 2)));
 
@@ -262,7 +268,7 @@ namespace NPI_2 {
         /// Draw the scene
         /// </summary>
         /// <param name="e">event arguments</param>
-        private void DrawScene(object sender) {
+        private void DrawScene(object sender, int actual_frame) {
 
             using (DrawingContext dc = this.drawingGroup.Open()) {
 
@@ -281,9 +287,13 @@ namespace NPI_2 {
                         measuring.drawCircle(dc, 10, 3);
                         break;
                     case States.PAUSED:
-                        dc.DrawEllipse(null, situation_pen, shoot_objective, 10, 10);
-                        if (shooting) 
-                            shoot_1.drawCircle(dc, 20);
+                        if(!shooting && !pointed)
+                            dc.DrawEllipse(null, situation_pen, shoot_objective, 10, 10);
+                        if (shooting || pointed)
+                            shoot_1.drawCross(dc, 10);
+
+                        if (shoot_1.isCompleted() && actual_frame-first_frame_shoot < 80)
+                            dc.DrawEllipse(null, shoot_pen, actual_shot_point, 30, 30);
 
                         break;
                 }
@@ -324,18 +334,18 @@ namespace NPI_2 {
                             skeleton_tracked = true;
                         }
                     }
+
+                    DrawScene(sender, skeletonFrame.FrameNumber);
                 }
             }
 
             // Change colors and states if no skeleton is recorded
             if (skeletons.Length == 0 || !skeleton_tracked) {
                 situation_pen.Brush = Brushes.DarkRed;
+                this.statusBarText.Text = "";
                 this.measured = false;                      //Remeasure the user if it's not captured by the sensor
                 state = States.SETTING_POSITION;
             }
-
-            DrawScene(sender);
-
         }
 
         /// <summary>
@@ -369,8 +379,8 @@ namespace NPI_2 {
             SkeletonPoint hand = skel.Joints[JointType.HandRight].Position;
             SkeletonPoint elbow = skel.Joints[JointType.ElbowRight].Position;
 
-            shoot_0 = new Gesture(hand, JointType.HandRight,my_KinectSensor,1);
-            shoot_1 = new Gesture(sum(elbow, 0.05 * Math.Sign(hand.X - elbow.X), 0.9*forearm, 0.9*forearm), JointType.HandRight, my_KinectSensor, 0.1f);
+            shoot_0 = new Gesture(hand, JointType.HandRight,my_KinectSensor,2,0.05f);
+            shoot_1 = new Gesture(sum(elbow, 0.05 * Math.Sign(hand.X - elbow.X), 0.9*forearm, 0.9*forearm), JointType.HandRight, my_KinectSensor, 0.1f, 0.3f);
             
             exit = new Gesture(sum(skel.Joints[JointType.Head].Position, -2 * (arm + forearm), -0.05, 0), JointType.HandLeft, my_KinectSensor, 1);
             exit.setDistanceColor(0, Brushes.Purple);
@@ -394,8 +404,8 @@ namespace NPI_2 {
             SkeletonPoint right_elbow = skel.Joints[JointType.ElbowRight].Position;
             SkeletonPoint right_wrist = skel.Joints[JointType.WristRight].Position;
 
-            arm = (float)distance(right_shoulder, right_elbow);
-            forearm = (float)distance(right_wrist, right_elbow);
+            arm = distance(right_shoulder, right_elbow);
+            forearm = distance(right_wrist, right_elbow);
 
             SkeletonPoint[] measuring_points = new SkeletonPoint[4];
             measuring_points[0] = sum(skel.Joints[JointType.ShoulderRight].Position, arm + 0.05, -0.05, 0);
@@ -422,6 +432,8 @@ namespace NPI_2 {
                 measured = true;
                 first_frame_measure = -1;   // To ensure that the next time that an user need to be measured, he is
                 state = States.PAUSED;
+                this.statusBarText.Text = "";
+                this.measure_imagen.Visibility = Visibility.Hidden;
             }
         }
 
@@ -497,12 +509,12 @@ namespace NPI_2 {
         private Point compute_shoot(SkeletonPoint hand, SkeletonPoint elbow){
             Point point = new Point(-1,-1);
             SkeletonPoint proyection_point = new SkeletonPoint();
-            proyection_point.Z = 1.1f;
+            proyection_point.Z =  hand.Z - 0.5f;
 
             if (elbow.Z - hand.Z > 0.05f) {
-                double factor = (proyection_point.Z - hand.Z) / (elbow.Z - hand.Z);
-                proyection_point.X = (float) (elbow.X + factor * (elbow.X - hand.X));
-                proyection_point.Y = (float) (elbow.Y + factor * (elbow.Y - hand.Y));
+                float factor = (proyection_point.Z - hand.Z) / (elbow.Z - hand.Z);
+                proyection_point.X =  elbow.X + factor * (elbow.X - hand.X);
+                proyection_point.Y =  elbow.Y + factor * (elbow.Y - hand.Y);
 
                 point = SkeletonPointToScreen(proyection_point);
             }
@@ -510,25 +522,28 @@ namespace NPI_2 {
             return point;
         }
 
-
         private void detect_shoot_movement(Skeleton skel, int actual_frame) {
+            Point shot_point = new Point(-1, -1);
             shoot_0.adjustColor(skel, actual_frame);
             SkeletonPoint hand = skel.Joints[JointType.HandRight].Position;
             SkeletonPoint elbow = skel.Joints[JointType.ElbowRight].Position;
 
-            if (!shooting && !shoot_0.isSituated()) {
+            shoot_objective = compute_shoot(hand, elbow);
+
+            if (!shoot_0.isSituated() && !pointed && !shooting) 
                 shoot_0.adjustLocations(hand);
+
+            if (shoot_0.isCompleted() && !shooting) {
+                pointed = true;
+                actual_shot_point = shoot_objective;
             }
 
-            if (shoot_0.isCompleted()) {
+            if (pointed && !shoot_0.isSituated()) {
                 shooting = true;
+                pointed = false;
                 first_frame_shooting = actual_frame;
-
                 shoot_1.adjustLocations(sum(elbow, -0.1 * Math.Sign(hand.X - elbow.X), 0.7 * forearm, 0));
             }
-
-
-            shoot_objective = compute_shoot(hand, elbow);
 
             if (shooting) {
                 if (actual_frame - first_frame_shooting > 120) {
@@ -537,10 +552,11 @@ namespace NPI_2 {
 
                 shoot_1.adjustColor(skel, actual_frame);
                 if (shoot_1.isCompleted()) {
-                    measured = false;
-                    state = States.MEASURING_USER;
+                    first_frame_shoot = actual_frame;
+                    shooting = false;
                 }
             }
+
         }
     }
 
