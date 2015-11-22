@@ -35,6 +35,7 @@ namespace NPI_2 {
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
     using Microsoft.Kinect;
+	using System.Windows.Controls;
 
     /// <summary>
     /// Possible states of the application
@@ -135,6 +136,16 @@ namespace NPI_2 {
         /// </summary>
         private Pen situation_pen = new Pen(Brushes.Blue, 6);
 
+		/// <sumary>
+		/// User's life in the game
+		/// </sumary>
+		private int life = 3;
+
+		/// <sumary>
+		/// Frequency with which the Dalton will be displayed
+		/// </sumary>
+		float frequency = 5;
+
         /// <summary>
         /// Initializes a new instance of the MainWindow class.
         /// </summary>
@@ -185,6 +196,37 @@ namespace NPI_2 {
 
             return distance;
         }
+
+		public void changeImage(Image img, int num) {
+			img.Visibility = Visibility.Visible;
+			string number = num.ToString();
+			string name = "../../images/" + number + ".png";
+			img.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath(name)));
+		}
+
+		public Image changePosition(Image last_position) {
+			last_position.Visibility = Visibility.Hidden;
+			int position = getRandomNumber(3);
+			Image new_position = new Image();
+			if (position == 1)
+				new_position = imageDalton1;
+			else if (position == 2)
+				new_position = imageDalton2;
+			else
+				new_position = imageDalton3;
+
+			new_position.Visibility = Visibility.Visible;
+			return new_position;
+		}
+
+		public bool isDead(Point shoot, Image current_image) {
+			bool dead = false;
+			if (current_image.MaxHeight >= shoot.Y && current_image.MinHeight <= shoot.Y &&
+				current_image.MaxWidth >= shoot.X && current_image.MinWidth <= shoot.X) {
+				dead = true;
+			}
+			return dead;
+		}
 
         /// <summary>
         /// Execute startup tasks
@@ -431,7 +473,7 @@ namespace NPI_2 {
             if (measuring.isCompleted()) {
                 measured = true;
                 first_frame_measure = -1;   // To ensure that the next time that an user need to be measured, he is
-                state = States.PAUSED;
+                state = States.PLAYING;
                 this.statusBarText.Text = "";
                 this.measure_imagen.Visibility = Visibility.Hidden;
             }
@@ -448,7 +490,6 @@ namespace NPI_2 {
             Point point_head = SkeletonPointToScreen(skel.Joints[JointType.Head].Position);
 
             if (state == States.SETTING_POSITION) {
-                this.imagen.Visibility = Visibility.Hidden;
 
                 if (Math.Abs(point_head.Y - height_up) < tolerance && Math.Abs(RenderWidth * 0.5 - point_head.X) < tolerance) {
                     situation_pen = new Pen(Brushes.Green, 6);
@@ -497,9 +538,15 @@ namespace NPI_2 {
             if (state == States.MEASURING_USER) {
                 measureUser(skel, actual_frame);
                 initializeElements(skel);
+				changeImage(life_image, 3);
             }
+
+			if (state == States.PLAYING) {
+				detect_shoot_movement(skel, actual_frame);
+			}
+
             if( state== States.PAUSED) {
-                detect_shoot_movement(skel, actual_frame);
+                
             }
 
             if (measured)
