@@ -22,7 +22,6 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Kinect;
-using System.Math;
 
 namespace NPI_2 {
 
@@ -39,6 +38,18 @@ namespace NPI_2 {
         private Point actual_shot_point;
         private Pen shoot_pen = new Pen(Brushes.Black, 6);
         private Calculator calculator;
+        private float forearm;
+
+        public Shoot(KinectSensor sensor, Skeleton skel, float forearm) {
+            SkeletonPoint hand = skel.Joints[JointType.HandRight].Position;
+            SkeletonPoint elbow = skel.Joints[JointType.ElbowRight].Position;
+            calculator = new Calculator();
+            gestures = new Gesture[2];
+            gestures[0] = new Gesture(hand, JointType.HandRight, sensor, 2, 0.05f);
+            gestures[1] = new Gesture(calculator.sum(elbow, 0.05 * Math.Sign(hand.X - elbow.X), 0.9 * forearm, 0.9 * forearm), JointType.HandRight, sensor, 0.1f, 0.3f);
+
+            this.forearm = forearm;
+        }
 
         public Point compute_shoot(SkeletonPoint hand, SkeletonPoint elbow) {
             Point point = new Point(-1, -1);

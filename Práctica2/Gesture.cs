@@ -117,6 +117,7 @@ namespace NPI_2 {
             this.tolerance = tolerance;
 
             initializeColors();
+            calculator = new Calculator();
         }
 
         /// <summary>
@@ -146,6 +147,7 @@ namespace NPI_2 {
             this.tolerance = tolerance;
 
             initializeColors();
+            calculator = new Calculator();
         }
 
         /// <summary>

@@ -4,7 +4,6 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Kinect;
-using System.Math;
 
 namespace NPI_2 {
     class Calculator {

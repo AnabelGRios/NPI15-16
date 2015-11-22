@@ -117,7 +117,7 @@ namespace NPI_2 {
         private Pen situation_pen = new Pen(Brushes.Blue, 6);
 
         ///
-        private Calculator calculator;
+        private Calculator calculator = new Calculator();
 
         /// <summary>
         /// Initializes a new instance of the MainWindow class.
@@ -172,6 +172,9 @@ namespace NPI_2 {
                     this.my_KinectSensor = null;
                 }
             }
+
+
+            calculator = new Calculator();
 
         }
 
@@ -302,10 +305,7 @@ namespace NPI_2 {
             SkeletonPoint hand = skel.Joints[JointType.HandRight].Position;
             SkeletonPoint elbow = skel.Joints[JointType.ElbowRight].Position;
 
-            Gesture[] shoots = new Gesture[2];
-            shoots[0] = new Gesture(hand, JointType.HandRight,my_KinectSensor,2,0.05f);
-            shoots[1] = new Gesture(calculator.sum(elbow, 0.05 * Math.Sign(hand.X - elbow.X), 0.9 * forearm, 0.9 * forearm), JointType.HandRight, my_KinectSensor, 0.1f, 0.3f);
-
+            shoot = new Shoot(my_KinectSensor , skel, forearm);
 
             exit = new Gesture(calculator.sum(skel.Joints[JointType.Head].Position, -2 * (arm + forearm), -0.05, 0), JointType.HandLeft, my_KinectSensor, 1);
             exit.setDistanceColor(0, Brushes.Purple);
@@ -373,7 +373,6 @@ namespace NPI_2 {
             Point point_head = calculator.SkeletonPointToScreen(my_KinectSensor,skel.Joints[JointType.Head].Position);
 
             if (state == States.SETTING_POSITION) {
-                this.imagen.Visibility = Visibility.Hidden;
 
                 if (Math.Abs(point_head.Y - height_up) < tolerance && Math.Abs(RenderWidth * 0.5 - point_head.X) < tolerance) {
                     situation_pen = new Pen(Brushes.Green, 6);
