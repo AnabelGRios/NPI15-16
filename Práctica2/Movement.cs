@@ -25,13 +25,17 @@ using Microsoft.Kinect;
 namespace NPI_2 {
     class Movement {
         private int actual_gesture;
-        private Gesture[] gestures;
+        protected Gesture[] gestures;
 
         public Movement(Gesture[] gestures) {
             actual_gesture = 0;
             this.gestures = new Gesture[gestures.Length];
             this.gestures = gestures;
         }
+
+        public Movement() { 
+
+}
 
         public Gesture actualGesture() {
             return gestures[actual_gesture];

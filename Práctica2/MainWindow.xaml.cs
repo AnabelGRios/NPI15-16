@@ -77,8 +77,7 @@ namespace NPI_2 {
         Gesture measuring;
         Gesture pause;
 
-        Gesture shoot_0;
-        Gesture shoot_1;
+        Shoot shoot;
 
         /// <summary>
         /// Tolerance for the initial position
@@ -103,24 +102,6 @@ namespace NPI_2 {
         int first_frame_measure = -1;
 
         /// <summary>
-        /// Information to know if the shot can be completed
-        /// </summary>
-        bool pointed = false;
-        bool shooting = false;
-        int first_frame_shooting = -1;
-
-        /// <summary>
-        /// Tolerance for the shoots
-        /// </summary>
-        private double tolerance_shoot = 0.05;
-        private Point shoot_objective;
-
-        private int first_frame_shoot = -1;
-        private Point actual_shot_point;
-
-        private Pen shoot_pen = new Pen(Brushes.Black, 6);
-
-        /// <summary>
         /// Measures of the user's arm
         /// </summary>
         float arm = 0, forearm = 0;
@@ -135,55 +116,14 @@ namespace NPI_2 {
         /// </summary>
         private Pen situation_pen = new Pen(Brushes.Blue, 6);
 
+        ///
+        private Calculator calculator;
+
         /// <summary>
         /// Initializes a new instance of the MainWindow class.
         /// </summary>
         public MainWindow() {
             InitializeComponent();
-        }
-
-        /// <summary>
-        /// Sum two SkeletonPoints
-        /// </summary>
-        /// <param name="first"> First point </param> 
-        /// <param name="second"> Second point </param>
-        /// <returns> Sum </returns> 
-        public static SkeletonPoint sum(SkeletonPoint first, SkeletonPoint second) {
-            SkeletonPoint sum = first;
-            sum.X += second.X;
-            sum.Y += second.Y;
-            sum.Z += second.Z;
-            return sum;
-        }
-
-        /// <summary>
-        /// Sum two 3D points, one given by a SkeletonPoint and the other by its coordinates
-        /// </summary>
-        /// <param name="point">SkeletonPoint to sum</param>
-        /// <param name="x"> 1st coordinate</param>
-        /// <param name="y"> 2nd coordinate</param>
-        /// <param name="z"> 3rd coordinate</param>
-        /// <returns> Sum </returns>
-        public static SkeletonPoint sum(SkeletonPoint point, double x, double y, double z) {
-            SkeletonPoint sum = point;
-            sum.X += (float)x;
-            sum.Y += (float)y;
-            sum.Z += (float)z;
-            return sum;
-        }
-
-        public int getRandomNumber(int max_number) {
-            Random random = new Random();
-            return (random.Next() % max_number) + 1;
-        }
-
-
-        public float distance(SkeletonPoint a, SkeletonPoint b) {
-            float distance = (float) Math.Sqrt((double)(Math.Pow((a.X - b.X), 2) +
-                Math.Pow((a.Y - b.Y), 2) +
-                Math.Pow((a.Z - b.Z), 2)));
-
-            return distance;
         }
 
         /// <summary>
@@ -287,13 +227,7 @@ namespace NPI_2 {
                         measuring.drawCircle(dc, 10, 3);
                         break;
                     case States.PAUSED:
-                        if(!shooting && !pointed)
-                            dc.DrawEllipse(null, situation_pen, shoot_objective, 10, 10);
-                        if (shooting || pointed)
-                            shoot_1.drawCross(dc, 10);
-
-                        if (shoot_1.isCompleted() && actual_frame-first_frame_shoot < 80)
-                            dc.DrawEllipse(null, shoot_pen, actual_shot_point, 30, 30);
+                        shoot.draw(dc,actual_frame);
 
                         break;
                 }
@@ -348,17 +282,6 @@ namespace NPI_2 {
             }
         }
 
-        /// <summary>
-        /// Maps a SkeletonPoint to lie within our render space and converts to Point
-        /// </summary>
-        /// <param name="skelpoint">point to map</param>
-        /// <returns>mapped point</returns>
-        private Point SkeletonPointToScreen(SkeletonPoint skelpoint) {
-            // Convert point to depth space.  
-            // We are not using depth directly, but we do want the points in our 640x480 output resolution.
-            DepthImagePoint depthPoint = this.my_KinectSensor.CoordinateMapper.MapSkeletonPointToDepthPoint(skelpoint, DepthImageFormat.Resolution640x480Fps30);
-            return new Point(depthPoint.X, depthPoint.Y);
-        }
 
         /// <summary>
         /// Determine gestures and guides positions
@@ -366,8 +289,8 @@ namespace NPI_2 {
         /// <param name="skel">Skeleton tracked to determine guides positions</param>
         private void initializeElements(Skeleton skel) {
             SkeletonPoint[] pause_points = new SkeletonPoint[2];
-            pause_points[0] = sum(skel.Joints[JointType.HipRight].Position, 0.2, 0, -0.1);
-            pause_points[1] = sum(skel.Joints[JointType.HipLeft].Position, -0.2, 0, -0.1);
+            pause_points[0] = calculator.sum(skel.Joints[JointType.HipRight].Position, 0.2, 0, -0.1);
+            pause_points[1] = calculator.sum(skel.Joints[JointType.HipLeft].Position, -0.2, 0, -0.1);
             JointType[] pause_joints = new JointType[2];
             pause_joints[0] = JointType.HandRight;
             pause_joints[1] = JointType.HandLeft;
@@ -379,10 +302,12 @@ namespace NPI_2 {
             SkeletonPoint hand = skel.Joints[JointType.HandRight].Position;
             SkeletonPoint elbow = skel.Joints[JointType.ElbowRight].Position;
 
-            shoot_0 = new Gesture(hand, JointType.HandRight,my_KinectSensor,2,0.05f);
-            shoot_1 = new Gesture(sum(elbow, 0.05 * Math.Sign(hand.X - elbow.X), 0.9*forearm, 0.9*forearm), JointType.HandRight, my_KinectSensor, 0.1f, 0.3f);
-            
-            exit = new Gesture(sum(skel.Joints[JointType.Head].Position, -2 * (arm + forearm), -0.05, 0), JointType.HandLeft, my_KinectSensor, 1);
+            Gesture[] shoots = new Gesture[2];
+            shoots[0] = new Gesture(hand, JointType.HandRight,my_KinectSensor,2,0.05f);
+            shoots[1] = new Gesture(calculator.sum(elbow, 0.05 * Math.Sign(hand.X - elbow.X), 0.9 * forearm, 0.9 * forearm), JointType.HandRight, my_KinectSensor, 0.1f, 0.3f);
+
+
+            exit = new Gesture(calculator.sum(skel.Joints[JointType.Head].Position, -2 * (arm + forearm), -0.05, 0), JointType.HandLeft, my_KinectSensor, 1);
             exit.setDistanceColor(0, Brushes.Purple);
             exit.setDistanceColor(1, Brushes.Blue);
             exit.setDistanceColor(2, Brushes.Gray);
@@ -404,14 +329,14 @@ namespace NPI_2 {
             SkeletonPoint right_elbow = skel.Joints[JointType.ElbowRight].Position;
             SkeletonPoint right_wrist = skel.Joints[JointType.WristRight].Position;
 
-            arm = distance(right_shoulder, right_elbow);
-            forearm = distance(right_wrist, right_elbow);
+            arm = calculator.distance(right_shoulder, right_elbow);
+            forearm = calculator.distance(right_wrist, right_elbow);
 
             SkeletonPoint[] measuring_points = new SkeletonPoint[4];
-            measuring_points[0] = sum(skel.Joints[JointType.ShoulderRight].Position, arm + 0.05, -0.05, 0);
-            measuring_points[1] = sum(skel.Joints[JointType.ShoulderRight].Position, (arm + forearm) + 0.05, -0.05, 0);
-            measuring_points[2] = sum(skel.Joints[JointType.ShoulderLeft].Position, -arm - 0.05, -0.05, 0);
-            measuring_points[3] = sum(skel.Joints[JointType.ShoulderLeft].Position, -(arm + forearm) - 0.05, -0.05, 0);
+            measuring_points[0] = calculator.sum(skel.Joints[JointType.ShoulderRight].Position, arm + 0.05, -0.05, 0);
+            measuring_points[1] = calculator.sum(skel.Joints[JointType.ShoulderRight].Position, (arm + forearm) + 0.05, -0.05, 0);
+            measuring_points[2] = calculator.sum(skel.Joints[JointType.ShoulderLeft].Position, -arm - 0.05, -0.05, 0);
+            measuring_points[3] = calculator.sum(skel.Joints[JointType.ShoulderLeft].Position, -(arm + forearm) - 0.05, -0.05, 0);
 
             if (first_frame_measure == -1) {
                 //Defines the measuring gesture
@@ -445,7 +370,7 @@ namespace NPI_2 {
         /// <param name="e">event arguments</param>
         private void detect_skeletons_position(Skeleton skel, int actual_frame) {
             // The head point projection to the screen is compared with the guide line
-            Point point_head = SkeletonPointToScreen(skel.Joints[JointType.Head].Position);
+            Point point_head = calculator.SkeletonPointToScreen(my_KinectSensor,skel.Joints[JointType.Head].Position);
 
             if (state == States.SETTING_POSITION) {
                 this.imagen.Visibility = Visibility.Hidden;
@@ -499,66 +424,12 @@ namespace NPI_2 {
                 initializeElements(skel);
             }
             if( state== States.PAUSED) {
-                detect_shoot_movement(skel, actual_frame);
+                shoot.detect_shoot_movement(skel, actual_frame);
             }
 
             if (measured)
                 exit.adjustColor(skel, actual_frame);
         }
 
-        private Point compute_shoot(SkeletonPoint hand, SkeletonPoint elbow){
-            Point point = new Point(-1,-1);
-            SkeletonPoint proyection_point = new SkeletonPoint();
-            proyection_point.Z =  hand.Z - 0.5f;
-
-            if (elbow.Z - hand.Z > 0.05f) {
-                float factor = (proyection_point.Z - hand.Z) / (elbow.Z - hand.Z);
-                proyection_point.X =  elbow.X + factor * (elbow.X - hand.X);
-                proyection_point.Y =  elbow.Y + factor * (elbow.Y - hand.Y);
-
-                point = SkeletonPointToScreen(proyection_point);
-            }
-
-            return point;
-        }
-
-        private void detect_shoot_movement(Skeleton skel, int actual_frame) {
-            Point shot_point = new Point(-1, -1);
-            shoot_0.adjustColor(skel, actual_frame);
-            SkeletonPoint hand = skel.Joints[JointType.HandRight].Position;
-            SkeletonPoint elbow = skel.Joints[JointType.ElbowRight].Position;
-
-            shoot_objective = compute_shoot(hand, elbow);
-
-            if (!shoot_0.isSituated() && !pointed && !shooting) 
-                shoot_0.adjustLocations(hand);
-
-            if (shoot_0.isCompleted() && !shooting) {
-                pointed = true;
-                actual_shot_point = shoot_objective;
-            }
-
-            if (pointed && !shoot_0.isSituated()) {
-                shooting = true;
-                pointed = false;
-                first_frame_shooting = actual_frame;
-                shoot_1.adjustLocations(sum(elbow, -0.1 * Math.Sign(hand.X - elbow.X), 0.7 * forearm, 0));
-            }
-
-            if (shooting) {
-                if (actual_frame - first_frame_shooting > 120) {
-                    shooting = false;
-                }
-
-                shoot_1.adjustColor(skel, actual_frame);
-                if (shoot_1.isCompleted()) {
-                    first_frame_shoot = actual_frame;
-                    shooting = false;
-                }
-            }
-
-        }
     }
-
-
 }
