@@ -60,12 +60,14 @@ namespace NPI_2 {
         private float seconds;
         private int first_frame;
 
+        private Calculator calculator;
+
         /// <summary>
         /// Maps a SkeletonPoint to lie within our render space and converts to Point
         /// </summary>
         /// <param name="skelpoint">point to map</param>
         /// <returns>mapped point</returns>
-        private Point SkeletonPointToScreen(SkeletonPoint skelpoint, KinectSensor sensor) {
+        public Point SkeletonPointToScreen(SkeletonPoint skelpoint) {
             // Convert point to depth space.  
             // We are not using depth directly, but we do want the points in our 640x480 output resolution.
             DepthImagePoint depthPoint = sensor.CoordinateMapper.MapSkeletonPointToDepthPoint(skelpoint, DepthImageFormat.Resolution640x480Fps30);
@@ -109,13 +111,13 @@ namespace NPI_2 {
 
             this.sensor = sensor;
             this.screen_locations = new Point[1];
-            this.screen_locations[0] = SkeletonPointToScreen(locations[0], this.sensor);
+            this.screen_locations[0] = SkeletonPointToScreen(locations[0]);
 
             this.seconds = seconds;
             this.tolerance = tolerance;
 
-
             initializeColors();
+            calculator = new Calculator();
         }
 
         /// <summary>
@@ -138,13 +140,14 @@ namespace NPI_2 {
             this.sensor = sensor;
             this.screen_locations = new Point[locations.Length];
             for (int i = 0; i < locations.Length; i++) {
-                this.screen_locations[i] = SkeletonPointToScreen(locations[i], this.sensor);
+                this.screen_locations[i] = SkeletonPointToScreen(locations[i]);
             }
 
             this.seconds = seconds;
             this.tolerance = tolerance;
 
             initializeColors();
+            calculator = new Calculator();
         }
 
         /// <summary>
@@ -192,9 +195,7 @@ namespace NPI_2 {
 
             for (int i = 0; i < locations.Length; i++) {
                 SkeletonPoint joint_point = skeleton.Joints[joints[i]].Position;
-                double distance = Math.Sqrt((double)((locations[i].X - joint_point.X) * (locations[i].X - joint_point.X) +
-                                     (locations[i].Y - joint_point.Y) * (locations[i].Y - joint_point.Y) +
-                                     (locations[i].Z - joint_point.Z) * (locations[i].Z - joint_point.Z)));
+                double distance = calculator.distance(joint_point, locations[i]);
 
                 //Change colors according to distance
                 if (distance < tolerance) {
@@ -308,7 +309,7 @@ namespace NPI_2 {
         /// <param name="new_locations">New locations of the gesture</param>
         public void adjustLocations(SkeletonPoint new_location) {
             locations[0] = new_location;
-            screen_locations[0] = SkeletonPointToScreen(new_location, sensor);
+            screen_locations[0] = SkeletonPointToScreen(new_location);
         }
 
 
@@ -319,7 +320,7 @@ namespace NPI_2 {
         public void adjustLocations(SkeletonPoint[] new_locations) {
             for (int i = 0; i < locations.Length; i++) {
                 locations[i] = new_locations[i];
-                screen_locations[i] = SkeletonPointToScreen(new_locations[i], sensor);
+                screen_locations[i] = SkeletonPointToScreen(new_locations[i]);
             }
         }
     }
