@@ -90,7 +90,7 @@ namespace NPI_2 {
 
             shoot_objective = compute_shoot(hand, elbow);
 
-            if (!gestures[0].isSituated() && !pointed && !shooting)
+            if (!gestures[0].isSituated() && !pointed)
                 gestures[0].adjustLocations(hand);
 
             if (gestures[0].isCompleted() && !shooting) {
@@ -108,7 +108,7 @@ namespace NPI_2 {
             }
 
             if (shooting) {
-                if (actual_frame - first_frame_shooting > 120) {
+                if (actual_frame - first_frame_shooting > 60) {
                     shooting = false;
                 }
 

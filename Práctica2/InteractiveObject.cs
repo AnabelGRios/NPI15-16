@@ -19,14 +19,22 @@
 
 using System;
 using System.Windows.Controls;
+using System.Windows;
 using System.Windows.Media.Imaging;
 
 namespace NPI_2 {
     class InteractiveObject {
 
         private float frequency;    // Frequency the object is shown
-        Image image;    // The object that will be shown
+        private Image image;    // The object that will be shown
+		private Calculator calculator;
+		private int first_active_frame = -1;
+		private int first_deactivate_frame = -1;
+		private bool active = false;
+		float delay = -1;
 
+		private const float RenderWidth = 640.0f;
+		private const float RenderHeight = 480.0f;
 
         /// <summary>
         /// Constructor of the class
@@ -34,27 +42,57 @@ namespace NPI_2 {
         /// <param name="img"></param>
         /// <param name="picture"></param>
         /// <param name="freq"></param>
-        public InteractiveObject(Image img, string picture, float freq) {
+        public InteractiveObject(ref Image img, string picture, float freq, float delay = 60, int first_frame = -1) {
             image = img;
-            image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../" + picture)));
+            image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/" + picture)));
             frequency = freq;
+			calculator = new Calculator();
+			first_active_frame = first_frame;
+			if (first_frame == -1) {
+				active = true;
+			}
+			this.delay = delay;
         }
 
         /// <summary>
         /// This metod sets the position where the picture will show.
         /// </summary>
         /// <param name="img"></param>
-        public void setPosition(Image img) {
-            image = img;
-        }
+		public void changePosition(int actual_frame, string picture = "JoeDalton.png") {
+			int position = calculator.getRandomNumber(4);
+
+			Thickness margin = image.Margin;
+
+			double margin_left = calculator.getRandomNumber((int) (RenderWidth - image.Width));
+			double margin_right = RenderWidth - margin_left - image.Width;
+			double margin_top = calculator.getRandomNumber((int) (RenderHeight - image.Height));
+
+			margin.Left = margin_left;
+			margin.Right = margin_right;
+			margin.Top = margin_top;
+
+			image.Margin = margin;
+			
+			image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/" + picture)));
+
+			first_active_frame = actual_frame;
+			active = true;
+			image.Visibility = Visibility.Visible;
+		}
+
+		public bool past_delay(int actual_frame) {
+			return first_deactivate_frame + delay > actual_frame;
+		}
 
         /// <summary>
         /// This metod sets the picture that will be show.
         /// </summary>
         /// <param name="picture"></param>
-        public void setPicture(string picture) {
-            image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../" + picture)));
-        }
+		public void changeImage(Image img, int num) {
+			string number = num.ToString();
+			string name = "../../images/" + number + ".png";
+			img.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath(name)));
+		}
 
         /// <summary>
         /// This metod sets the frequency, in seconds, with which the picture will show.
@@ -63,6 +101,43 @@ namespace NPI_2 {
         public void setFrequency(float new_freq) {
             frequency = new_freq;
         }
+
+		/// <summary>
+		/// This metods returns the frequency of the object.
+		/// </summary>
+		/// <returns></returns>
+		public float getFrequency() {
+			return frequency;
+		}
+
+		/// <summary>
+		/// This metod says if the user has interactuated with the object.
+		/// </summary>
+		/// <param name="point"></param>
+		/// <param name="current_image"></param>
+		/// <returns></returns>
+		public bool isHit(Point point, int hit_frame) {
+			bool hit = false;
+			if (image.Margin.Top <= point.Y && image.Margin.Top + image.Height >= point.Y &&
+				image.Margin.Left + image.Width >= point.X && image.Margin.Left <= point.X &&
+				hit_frame > first_active_frame && active) {
+					hit = true;
+					active = false;
+					first_deactivate_frame = hit_frame;
+					image.Visibility = Visibility.Hidden;
+			}
+			return hit;
+		}
+
+		public bool isDeactivated(int actual_frame) {
+			bool in_time = (actual_frame < first_active_frame + getFrequency());
+			if (!in_time) {
+				first_deactivate_frame = actual_frame;
+				image.Visibility = Visibility.Hidden;
+			}
+			active = active && in_time;
+			return !active;
+		}
 
     }
 }

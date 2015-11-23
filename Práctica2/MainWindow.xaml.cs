@@ -123,22 +123,7 @@ namespace NPI_2 {
 		private int life = 4;
 		bool life_control = true;
 
-		/// <sumary>
-		/// Frequency with which the Dalton will be displayed
-		/// </sumary>
-		float frequency = 5;
-
-		/// <summary>
-		/// Actual images first frame
-		/// </summary>
-		int actual_img_first_frame = -1;
-		int actual_img_2_first_frame = -1;
-
-		/// <summary>
-		/// Actual images
-		/// </summary>
-		Image actual_image;
-		Image actual_image_2;
+		InteractiveObject dalton1, dalton2, fajita, lives_object;
 
         ///
         private Calculator calculator = new Calculator();
@@ -149,41 +134,6 @@ namespace NPI_2 {
         public MainWindow() {
             InitializeComponent();
         }
-
-        /// <summary>
-
-		public void changeImage(Image img, int num) {
-			string number = num.ToString();
-			string name = "../../images/" + number + ".png";
-			img.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath(name)));
-		}
-
-		public Image changePosition(Image last_position) {
-			last_position.Visibility = Visibility.Hidden;
-			int position = calculator.getRandomNumber(4);
-			Image new_position = new Image();
-			if (position == 1)
-				new_position = imageDalton1;
-			else if (position == 2)
-				new_position = imageDalton2;
-			else if (position == 3)
-				new_position = imageDalton3;
-			else
-				new_position = imageDalton4;
-
-			new_position.Visibility = Visibility.Visible;
-
-			return new_position;
-		}
-
-		public bool isDead(Point shoot, Image current_image) {
-			bool dead = false;
-			if (current_image.MaxHeight >= shoot.Y && current_image.MinHeight <= shoot.Y &&
-				current_image.MaxWidth >= shoot.X && current_image.MinWidth <= shoot.X) {
-				dead = true;
-			}
-			return dead;
-		}
 
         /// <summary>
         /// Execute startup tasks
@@ -372,13 +322,11 @@ namespace NPI_2 {
             exit.setDistanceColor(2, Brushes.Gray);
             exit.setTimeColor(Brushes.Red);
 
-			imageDalton1.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/JoeDalton.png")));
-			imageDalton2.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/JoeDalton.png")));
-			imageDalton3.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/JoeDalton.png")));
-			imageDalton4.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/JoeDalton.png")));
-			actual_image = imageDalton1;
-			actual_image_2 = imageDalton2;
-			actual_img_2_first_frame = actual_frame + 1000;
+			dalton1 = new InteractiveObject(ref imageDalton1, "JoeDalton.png", 160);
+			dalton2 = new InteractiveObject(ref imageDalton2, "JoeDalton.png", 240, actual_frame+1000);
+			lives_object = new InteractiveObject(ref life_image, "3.png", 0);
+			fajita = new InteractiveObject(ref fajita_image, "fajita.png", 160);
+
         }
 
         /// <summary>
@@ -426,6 +374,9 @@ namespace NPI_2 {
                 state = States.PLAYING;
                 this.statusBarText.Text = "";
                 this.measure_imagen.Visibility = Visibility.Hidden;
+				imageDalton1.Visibility = Visibility.Visible;
+				initializeElements(skel, actual_frame);
+				lives_object.changeImage(life_image, 3);
             }
         }
 
@@ -488,8 +439,6 @@ namespace NPI_2 {
 
             if (state == States.MEASURING_USER) {
                 measureUser(skel, actual_frame);
-                initializeElements(skel, actual_frame);
-				changeImage(life_image, 3);
             }
 
 			if (state == States.PLAYING) {
@@ -501,43 +450,53 @@ namespace NPI_2 {
 				shoot.detect_shoot_movement(skel, actual_frame);
 				shot_point = shoot.getShotPointAndFrame(ref shot_frame);
 
-				if (shot_frame > actual_img_first_frame) {
-					if(shot_point != new Point(-1,-1))
-						dead = isDead(shot_point, actual_image);
-				}
+				dead = dalton1.isHit(shot_point, shot_frame);
+				dead_2 = dalton2.isHit(shot_point, shot_frame);
 
-				if (shot_frame > actual_img_2_first_frame) {
-					if (shot_point != new Point(-1, -1))
-						dead_2 = isDead(shot_point, actual_image_2);
-				}
-
-				if (actual_frame - actual_img_first_frame > 160 || dead) {
-					actual_image = changePosition(actual_image);
-					actual_img_first_frame = actual_frame;
+				if (dalton1.isDeactivated(actual_frame)) {
 					if (!dead) {
 						life--;
 						if (life < 0)
 							state = States.PAUSED;
 						else
-							changeImage(life_image, life);
+							lives_object.changeImage(life_image, life);
+					}
+
+					if (dalton1.past_delay(actual_frame)) {
+						dalton1.changePosition(actual_frame);
 					}
 				}
 
-				if (actual_frame - actual_img_2_first_frame > 300 || dead_2) {
-					actual_image_2 = changePosition(actual_image_2);
-					actual_img_2_first_frame = actual_frame;
+
+				if (dalton2.isDeactivated(actual_frame)) {
+					
 					if (life_control) {
 						life++;
 						life_control = false;
 					}
 					if (!dead_2) {
 						life--;
-						if (life <= 0) {
+						if (life < 0) {
 							state = States.PAUSED;
 							this.statusBarText.Text = "GAME OVER";
 						}
 						else
-							changeImage(life_image, life);
+							lives_object.changeImage(life_image, life);
+					}
+
+					if (dalton2.past_delay(actual_frame)) {
+						dalton2.changePosition(actual_frame);
+					}
+				}
+
+				if (life < 3 && fajita.isDeactivated(actual_frame) && fajita.past_delay(actual_frame) ) {
+					fajita.changePosition(actual_frame);
+				}
+
+				if (life < 3 && !fajita.isDeactivated(actual_frame)) {
+					Point left_hand = calculator.SkeletonPointToScreen(my_KinectSensor, skel.Joints[JointType.HandLeft].Position);
+					if (fajita.isHit(left_hand, actual_frame)) {
+						life++;
 					}
 				}
 
