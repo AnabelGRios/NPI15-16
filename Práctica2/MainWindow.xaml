@@ -29,6 +29,8 @@
            VerticalAlignment="Top" Grid.Row="1"/>
         <Image Name="imageDalton3" Height="226" Margin="646,288,98,0" Stretch="UniformToFill"  Visibility="Hidden"
            VerticalAlignment="Top" Grid.Row="1"/>
+        <Image Name="imageDalton4" Height="172" Margin="166,167,635,0" Stretch="UniformToFill"  Visibility="Hidden"
+           VerticalAlignment="Top" Grid.Row="1"/>
         <Image Name="life_image" Height="65" Margin="99,0,702,0" Stretch="UniformToFill"  Visibility="Hidden"
            VerticalAlignment="Top" Grid.Row="1"/>
         <Image Name="measure_imagen" Height="316" Margin="10,273,673,0" Stretch="UniformToFill"  Visibility="Hidden"

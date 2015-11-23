@@ -36,7 +36,7 @@ namespace NPI_2 {
         private Point shoot_objective;
         private int first_frame_shoot = -1;
         private Point actual_shot_point;
-        private Pen shoot_pen = new Pen(Brushes.Black, 6);
+        private Pen shoot_pen = new Pen(Brushes.Red, 6);
         private Calculator calculator;
         private float forearm;
 
@@ -51,7 +51,7 @@ namespace NPI_2 {
             this.forearm = forearm;
         }
 
-		public Point getShotPointAndFrame(int frame_number) {
+		public Point getShotPointAndFrame(ref int frame_number) {
 			frame_number = first_frame_shoot;
 			return actual_shot_point;
 		}

@@ -120,7 +120,7 @@ namespace NPI_2 {
 		/// <sumary>
 		/// User's life in the game
 		/// </sumary>
-		private int life = 3;
+		private int life = 4;
 
 		/// <sumary>
 		/// Frequency with which the Dalton will be displayed
@@ -157,14 +157,16 @@ namespace NPI_2 {
 
 		public Image changePosition(Image last_position) {
 			last_position.Visibility = Visibility.Hidden;
-			int position = calculator.getRandomNumber(3);
+			int position = calculator.getRandomNumber(4);
 			Image new_position = new Image();
 			if (position == 1)
 				new_position = imageDalton1;
 			else if (position == 2)
 				new_position = imageDalton2;
-			else
+			else if (position == 3)
 				new_position = imageDalton3;
+			else
+				new_position = imageDalton4;
 
 			new_position.Visibility = Visibility.Visible;
 
@@ -370,6 +372,7 @@ namespace NPI_2 {
 			imageDalton1.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/JoeDalton.png")));
 			imageDalton2.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/JoeDalton.png")));
 			imageDalton3.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/JoeDalton.png")));
+			imageDalton4.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/JoeDalton.png")));
 			actual_image = imageDalton1;
         }
 
@@ -467,8 +470,8 @@ namespace NPI_2 {
 
             }
             else if (Math.Abs(point_head.Y - height_up) > tolerance || Math.Abs(RenderWidth * 0.5 - point_head.X) > tolerance) {
-                if (actual_frame - first_wrong_frame > 30)
-                    state = States.SETTING_POSITION;
+                /*if (actual_frame - first_wrong_frame > 30)
+                    state = States.SETTING_POSITION;*/
 
                 if (situated)
                     situated = false;
@@ -490,14 +493,14 @@ namespace NPI_2 {
 				bool dead = false;
 				life_image.Visibility = Visibility.Visible;
 				shoot.detect_shoot_movement(skel, actual_frame);
-				shot_point = shoot.getShotPointAndFrame(shot_frame);
+				shot_point = shoot.getShotPointAndFrame(ref shot_frame);
 
 				if (shot_frame > actual_img_first_frame) {
 					if(shot_point != new Point(-1,-1))
 						dead = isDead(shot_point, actual_image);
 				}
 
-				if (actual_frame - actual_img_first_frame > 250 || dead) {
+				if (actual_frame - actual_img_first_frame > 160 || dead) {
 					actual_image = changePosition(actual_image);
 					actual_img_first_frame = actual_frame;
 					if (!dead) {
