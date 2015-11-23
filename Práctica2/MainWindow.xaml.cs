@@ -121,6 +121,7 @@ namespace NPI_2 {
 		/// User's life in the game
 		/// </sumary>
 		private int life = 4;
+		bool life_control = true;
 
 		/// <sumary>
 		/// Frequency with which the Dalton will be displayed
@@ -128,14 +129,16 @@ namespace NPI_2 {
 		float frequency = 5;
 
 		/// <summary>
-		/// Actual image first frame
+		/// Actual images first frame
 		/// </summary>
 		int actual_img_first_frame = -1;
+		int actual_img_2_first_frame = -1;
 
 		/// <summary>
-		/// Actual image
+		/// Actual images
 		/// </summary>
 		Image actual_image;
+		Image actual_image_2;
 
         ///
         private Calculator calculator = new Calculator();
@@ -346,7 +349,7 @@ namespace NPI_2 {
         /// Determine gestures and guides positions
         /// </summary>
         /// <param name="skel">Skeleton tracked to determine guides positions</param>
-        private void initializeElements(Skeleton skel) {
+        private void initializeElements(Skeleton skel, int actual_frame) {
             SkeletonPoint[] pause_points = new SkeletonPoint[2];
             pause_points[0] = calculator.sum(skel.Joints[JointType.HipRight].Position, 0.2, 0, -0.1);
             pause_points[1] = calculator.sum(skel.Joints[JointType.HipLeft].Position, -0.2, 0, -0.1);
@@ -374,6 +377,8 @@ namespace NPI_2 {
 			imageDalton3.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/JoeDalton.png")));
 			imageDalton4.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/JoeDalton.png")));
 			actual_image = imageDalton1;
+			actual_image_2 = imageDalton2;
+			actual_img_2_first_frame = actual_frame + 1000;
         }
 
         /// <summary>
@@ -483,7 +488,7 @@ namespace NPI_2 {
 
             if (state == States.MEASURING_USER) {
                 measureUser(skel, actual_frame);
-                initializeElements(skel);
+                initializeElements(skel, actual_frame);
 				changeImage(life_image, 3);
             }
 
@@ -491,6 +496,7 @@ namespace NPI_2 {
 				int shot_frame = -1;
 				Point shot_point;
 				bool dead = false;
+				bool dead_2 = false;
 				life_image.Visibility = Visibility.Visible;
 				shoot.detect_shoot_movement(skel, actual_frame);
 				shot_point = shoot.getShotPointAndFrame(ref shot_frame);
@@ -500,6 +506,11 @@ namespace NPI_2 {
 						dead = isDead(shot_point, actual_image);
 				}
 
+				if (shot_frame > actual_img_2_first_frame) {
+					if (shot_point != new Point(-1, -1))
+						dead_2 = isDead(shot_point, actual_image_2);
+				}
+
 				if (actual_frame - actual_img_first_frame > 160 || dead) {
 					actual_image = changePosition(actual_image);
 					actual_img_first_frame = actual_frame;
@@ -507,6 +518,24 @@ namespace NPI_2 {
 						life--;
 						if (life < 0)
 							state = States.PAUSED;
+						else
+							changeImage(life_image, life);
+					}
+				}
+
+				if (actual_frame - actual_img_2_first_frame > 300 || dead_2) {
+					actual_image_2 = changePosition(actual_image_2);
+					actual_img_2_first_frame = actual_frame;
+					if (life_control) {
+						life++;
+						life_control = false;
+					}
+					if (!dead_2) {
+						life--;
+						if (life <= 0) {
+							state = States.PAUSED;
+							this.statusBarText.Text = "GAME OVER";
+						}
 						else
 							changeImage(life_image, life);
 					}
