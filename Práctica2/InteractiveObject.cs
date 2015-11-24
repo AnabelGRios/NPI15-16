@@ -48,9 +48,6 @@ namespace NPI_2 {
             frequency = freq;
 			calculator = new Calculator();
 			first_active_frame = first_frame;
-			if (first_frame == -1) {
-				active = true;
-			}
 			this.delay = delay;
         }
 
@@ -73,7 +70,7 @@ namespace NPI_2 {
 
 			image.Margin = margin;
 			
-			image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/" + picture)));
+			//image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/" + picture)));
 
 			first_active_frame = actual_frame;
 			active = true;
@@ -81,17 +78,17 @@ namespace NPI_2 {
 		}
 
 		public bool past_delay(int actual_frame) {
-			return first_deactivate_frame + delay > actual_frame;
+			return first_deactivate_frame + delay < actual_frame && first_active_frame < actual_frame;
 		}
 
         /// <summary>
         /// This metod sets the picture that will be show.
         /// </summary>
         /// <param name="picture"></param>
-		public void changeImage(Image img, int num) {
+		public void changeImage(int num) {
 			string number = num.ToString();
 			string name = "../../images/" + number + ".png";
-			img.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath(name)));
+			image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath(name)));
 		}
 
         /// <summary>
@@ -130,13 +127,17 @@ namespace NPI_2 {
 		}
 
 		public bool isDeactivated(int actual_frame) {
-			bool in_time = (actual_frame < first_active_frame + getFrequency());
+			bool in_time = (actual_frame < first_active_frame + getFrequency() && actual_frame > first_active_frame);
 			if (!in_time) {
 				first_deactivate_frame = actual_frame;
 				image.Visibility = Visibility.Hidden;
+				active = false;
 			}
-			active = active && in_time;
-			return !active;
+			return !in_time;
+		}
+
+		public bool isActive() {
+			return active;
 		}
 
     }

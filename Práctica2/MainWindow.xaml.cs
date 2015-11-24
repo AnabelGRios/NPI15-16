@@ -120,8 +120,7 @@ namespace NPI_2 {
 		/// <sumary>
 		/// User's life in the game
 		/// </sumary>
-		private int life = 4;
-		bool life_control = true;
+		private int life = 3;
 
 		InteractiveObject dalton1, dalton2, fajita, lives_object;
 
@@ -322,10 +321,10 @@ namespace NPI_2 {
             exit.setDistanceColor(2, Brushes.Gray);
             exit.setTimeColor(Brushes.Red);
 
-			dalton1 = new InteractiveObject(ref imageDalton1, "JoeDalton.png", 160);
-			dalton2 = new InteractiveObject(ref imageDalton2, "JoeDalton.png", 240, actual_frame+1000);
+			dalton1 = new InteractiveObject(ref imageDalton1, "JoeDalton.png", 160, 60);
+			dalton2 = new InteractiveObject(ref imageDalton2, "JoeDalton.png", 240, 60, actual_frame+1000);
 			lives_object = new InteractiveObject(ref life_image, "3.png", 0);
-			fajita = new InteractiveObject(ref fajita_image, "fajita.png", 160);
+			fajita = new InteractiveObject(ref fajita_image, "fajita.png", 160, 2000);
 
         }
 
@@ -376,7 +375,7 @@ namespace NPI_2 {
                 this.measure_imagen.Visibility = Visibility.Hidden;
 				imageDalton1.Visibility = Visibility.Visible;
 				initializeElements(skel, actual_frame);
-				lives_object.changeImage(life_image, 3);
+				lives_object.changeImage(3);
             }
         }
 
@@ -453,27 +452,22 @@ namespace NPI_2 {
 				dead = dalton1.isHit(shot_point, shot_frame);
 				dead_2 = dalton2.isHit(shot_point, shot_frame);
 
-				if (dalton1.isDeactivated(actual_frame)) {
+				if (dalton1.isActive() && dalton1.isDeactivated(actual_frame)) {
 					if (!dead) {
 						life--;
-						if (life < 0)
+						if (life < 0) {
 							state = States.PAUSED;
+							this.statusBarText.Text = "GAME OVER";
+						}
 						else
-							lives_object.changeImage(life_image, life);
-					}
-
-					if (dalton1.past_delay(actual_frame)) {
-						dalton1.changePosition(actual_frame);
+							lives_object.changeImage(life);
 					}
 				}
+				if (!dalton1.isActive() && dalton1.past_delay(actual_frame)) {
+					dalton1.changePosition(actual_frame);
+				}
 
-
-				if (dalton2.isDeactivated(actual_frame)) {
-					
-					if (life_control) {
-						life++;
-						life_control = false;
-					}
+				if (dalton2.isActive() && dalton2.isDeactivated(actual_frame)) {
 					if (!dead_2) {
 						life--;
 						if (life < 0) {
@@ -481,12 +475,12 @@ namespace NPI_2 {
 							this.statusBarText.Text = "GAME OVER";
 						}
 						else
-							lives_object.changeImage(life_image, life);
+							lives_object.changeImage(life);
 					}
+				}
 
-					if (dalton2.past_delay(actual_frame)) {
-						dalton2.changePosition(actual_frame);
-					}
+				if (!dalton2.isActive() && dalton2.past_delay(actual_frame)) {
+					dalton2.changePosition(actual_frame);
 				}
 
 				if (life < 3 && fajita.isDeactivated(actual_frame) && fajita.past_delay(actual_frame) ) {
@@ -497,6 +491,7 @@ namespace NPI_2 {
 					Point left_hand = calculator.SkeletonPointToScreen(my_KinectSensor, skel.Joints[JointType.HandLeft].Position);
 					if (fajita.isHit(left_hand, actual_frame)) {
 						life++;
+						lives_object.changeImage(life);
 					}
 				}
 
