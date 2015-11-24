@@ -449,23 +449,23 @@ namespace NPI_2 {
 				shoot.detect_shoot_movement(skel, actual_frame);
 				shot_point = shoot.getShotPointAndFrame(ref shot_frame);
 
-				dead = dalton1.isHit(shot_point, shot_frame);
-				dead_2 = dalton2.isHit(shot_point, shot_frame);
+                dead = dalton1.isHit(shot_point, shot_frame);
+                dead_2 = dalton2.isHit(shot_point, shot_frame);
 
-				if (dalton1.isActive() && dalton1.isDeactivated(actual_frame)) {
-					if (!dead) {
-						life--;
-						lives_object.changeImage(life);
-						if (life == 0) {
-							state = States.PAUSED;
-							this.statusBarText.Text = "GAME OVER";
-						}
-					}
-				}
+                if (dalton1.isActive() && dalton1.isDeactivated(actual_frame)) {
+                    if (!dead) {
+                        life--;
+                        lives_object.changeImage(life);
+                        if (life == 0) {
+                            state = States.PAUSED;
+                            this.statusBarText.Text = "GAME OVER";
+                        }
+                    }
+                }
 
-				if (!dalton1.isActive() && dalton1.past_delay(actual_frame)) {
-					dalton1.changePosition(actual_frame);
-				}
+                if (!dalton1.isActive() && dalton1.past_delay(actual_frame)) {
+                    dalton1.changePosition(actual_frame);
+                }
 
 				if (dalton2.isActive() && dalton2.isDeactivated(actual_frame)) {
 					if (!dead_2) {

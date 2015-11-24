@@ -55,12 +55,12 @@ namespace NPI_2 {
         /// This metod sets the position where the picture will show.
         /// </summary>
         /// <param name="img"></param>
-		public void changePosition(int actual_frame, int widht = 765, int heigh = 589) {
+		public void changePosition(int actual_frame, int width = 765, int height = 589) {
 			Thickness margin = image.Margin;
 
-			double margin_left = calculator.getRandomNumber((int) (widht - image.Width));
+            double margin_left = calculator.getRandomNumber((int)(width - image.Width));
 			double margin_right = RenderWidth - margin_left - image.Width;
-			double margin_top = calculator.getRandomNumber((int) (heigh - image.Height));
+            double margin_top = calculator.getRandomNumber((int)(height - image.Height));
 
 			margin.Left = margin_left;
 			margin.Right = margin_right;
@@ -111,7 +111,7 @@ namespace NPI_2 {
 		/// <returns></returns>
 		public bool isHit(Point point, int hit_frame) {
 			bool hit = false;
-			if (image.Margin.Top <= point.Y && image.Margin.Top + image.Height >= point.Y &&
+			if (image.Margin.Top <= point.Y + 50 && image.Margin.Top + image.Height >= point.Y +50 &&
 				image.Margin.Left + image.Width >= point.X && image.Margin.Left <= point.X &&
 				hit_frame > first_active_frame && active) {
 					hit = true;
