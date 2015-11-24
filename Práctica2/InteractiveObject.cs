@@ -25,7 +25,7 @@ using System.Windows.Media.Imaging;
 namespace NPI_2 {
     class InteractiveObject {
 
-        private float frequency;    // Frequency the object is shown
+        private float frequency;    // Frequency the object is show
         private Image image;    // The object that will be shown
 		private Calculator calculator;
 		private int first_active_frame = -1;
@@ -55,22 +55,18 @@ namespace NPI_2 {
         /// This metod sets the position where the picture will show.
         /// </summary>
         /// <param name="img"></param>
-		public void changePosition(int actual_frame, string picture = "JoeDalton.png") {
-			int position = calculator.getRandomNumber(4);
-
+		public void changePosition(int actual_frame, int widht = 765, int heigh = 589) {
 			Thickness margin = image.Margin;
 
-			double margin_left = calculator.getRandomNumber((int) (RenderWidth - image.Width));
+			double margin_left = calculator.getRandomNumber((int) (widht - image.Width));
 			double margin_right = RenderWidth - margin_left - image.Width;
-			double margin_top = calculator.getRandomNumber((int) (RenderHeight - image.Height));
+			double margin_top = calculator.getRandomNumber((int) (heigh - image.Height));
 
 			margin.Left = margin_left;
 			margin.Right = margin_right;
 			margin.Top = margin_top;
 
 			image.Margin = margin;
-			
-			//image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/" + picture)));
 
 			first_active_frame = actual_frame;
 			active = true;
@@ -128,7 +124,7 @@ namespace NPI_2 {
 
 		public bool isDeactivated(int actual_frame) {
 			bool in_time = (actual_frame < first_active_frame + getFrequency() && actual_frame > first_active_frame);
-			if (!in_time) {
+			if (!in_time && active) {
 				first_deactivate_frame = actual_frame;
 				image.Visibility = Visibility.Hidden;
 				active = false;

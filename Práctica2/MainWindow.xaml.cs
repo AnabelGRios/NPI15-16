@@ -322,9 +322,9 @@ namespace NPI_2 {
             exit.setTimeColor(Brushes.Red);
 
 			dalton1 = new InteractiveObject(ref imageDalton1, "JoeDalton.png", 160, 60);
-			dalton2 = new InteractiveObject(ref imageDalton2, "JoeDalton.png", 240, 60, actual_frame+1000);
+			dalton2 = new InteractiveObject(ref imageDalton2, "JoeDalton.png", 300, 60, actual_frame+1000);
 			lives_object = new InteractiveObject(ref life_image, "3.png", 0);
-			fajita = new InteractiveObject(ref fajita_image, "fajita.png", 160, 2000);
+			fajita = new InteractiveObject(ref fajita_image, "fajita.png", 160, 500);
 
         }
 
@@ -455,14 +455,14 @@ namespace NPI_2 {
 				if (dalton1.isActive() && dalton1.isDeactivated(actual_frame)) {
 					if (!dead) {
 						life--;
-						if (life < 0) {
+						lives_object.changeImage(life);
+						if (life == 0) {
 							state = States.PAUSED;
 							this.statusBarText.Text = "GAME OVER";
 						}
-						else
-							lives_object.changeImage(life);
 					}
 				}
+
 				if (!dalton1.isActive() && dalton1.past_delay(actual_frame)) {
 					dalton1.changePosition(actual_frame);
 				}
@@ -470,12 +470,11 @@ namespace NPI_2 {
 				if (dalton2.isActive() && dalton2.isDeactivated(actual_frame)) {
 					if (!dead_2) {
 						life--;
-						if (life < 0) {
+						lives_object.changeImage(life);
+						if (life == 0) {
 							state = States.PAUSED;
 							this.statusBarText.Text = "GAME OVER";
 						}
-						else
-							lives_object.changeImage(life);
 					}
 				}
 
@@ -483,16 +482,16 @@ namespace NPI_2 {
 					dalton2.changePosition(actual_frame);
 				}
 
-				if (life < 3 && fajita.isDeactivated(actual_frame) && fajita.past_delay(actual_frame) ) {
-					fajita.changePosition(actual_frame);
-				}
-
-				if (life < 3 && !fajita.isDeactivated(actual_frame)) {
+				if (life < 3 && fajita.isActive() && !fajita.isDeactivated(actual_frame)) {
 					Point left_hand = calculator.SkeletonPointToScreen(my_KinectSensor, skel.Joints[JointType.HandLeft].Position);
 					if (fajita.isHit(left_hand, actual_frame)) {
 						life++;
 						lives_object.changeImage(life);
 					}
+				}
+
+				if (life < 3 && !fajita.isActive() && fajita.past_delay(actual_frame)) {
+					fajita.changePosition(actual_frame, 300);
 				}
 
 			}
