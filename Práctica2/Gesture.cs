@@ -323,6 +323,14 @@ namespace NPI_2 {
                 screen_locations[i] = SkeletonPointToScreen(new_locations[i]);
             }
         }
+
+        /// <summary>
+        /// Returns tolerance
+        /// </summary>
+        /// <returns></returns>
+        public float getTolerance() {
+            return tolerance;
+        }
     }
 }
 

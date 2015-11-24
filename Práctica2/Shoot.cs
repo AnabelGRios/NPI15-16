@@ -32,7 +32,6 @@ namespace NPI_2 {
         bool pointed = false;
         bool shooting = false;
         int first_frame_shooting = -1;
-        private double tolerance_shoot = 0.05;
         private Point shoot_objective;
         private int first_frame_shoot = -1;
         private Point actual_shot_point;
@@ -45,7 +44,7 @@ namespace NPI_2 {
             SkeletonPoint elbow = skel.Joints[JointType.ElbowRight].Position;
             calculator = new Calculator();
             gestures = new Gesture[2];
-            gestures[0] = new Gesture(hand, JointType.HandRight, sensor, 2, 0.05f);
+            gestures[0] = new Gesture(hand, JointType.HandRight, sensor, 1, 0.08f);
             gestures[1] = new Gesture(calculator.sum(elbow, 0.05 * Math.Sign(hand.X - elbow.X), 0.9 * forearm, 0.9 * forearm), JointType.HandRight, sensor, 0.1f, 0.3f);
 
             this.forearm = forearm;
@@ -61,25 +60,34 @@ namespace NPI_2 {
             SkeletonPoint proyection_point = new SkeletonPoint();
             proyection_point.Z = hand.Z - 0.5f;
 
-            if (elbow.Z - hand.Z > 0.05f) {
+            if (elbow.Z - hand.Z > 0.05f && Math.Abs(elbow.X-hand.X) > 0.03f) {
                 float factor = (proyection_point.Z - hand.Z) / (elbow.Z - hand.Z);
                 proyection_point.X = elbow.X + factor * (elbow.X - hand.X);
                 proyection_point.Y = elbow.Y + factor * (elbow.Y - hand.Y);
 
-                point = gestures[0].SkeletonPointToScreen(proyection_point);
+                point = gestures[0].SkeletonPointToScreen(calculator.sum(proyection_point, 0, -gestures[0].getTolerance()/2.0f, 0));
+            }
+            else {
+                point = gestures[0].SkeletonPointToScreen(calculator.sum(hand, 0, -gestures[0].getTolerance() / 2.0f, 0));
             }
 
             return point;
         }
 
         public void draw(DrawingContext dc, int actual_frame) {
-            if (!shooting && !pointed)
+            if (!shooting && !pointed) {
+                shoot_pen.Brush = Brushes.Red;
+                dc.DrawEllipse(null, shoot_pen, shoot_objective, 20, 20);
+            }
+            if (shooting || pointed){
+                shoot_pen.Brush = Brushes.DarkRed;
                 dc.DrawEllipse(null, shoot_pen, shoot_objective, 10, 10);
-            if (shooting || pointed)
-                gestures[1].drawCross(dc, 10);
+            }
 
-            if (gestures[1].isCompleted() && actual_frame - first_frame_shoot < 80)
-                dc.DrawEllipse(null, shoot_pen, actual_shot_point, 30, 30);
+            if (gestures[1].isCompleted() && actual_frame - first_frame_shoot < 50) {
+                shoot_pen.Brush = Brushes.Black;
+                dc.DrawEllipse(null, shoot_pen, actual_shot_point, 20, 20);
+            }
         }
 
         public void detect_shoot_movement(Skeleton skel, int actual_frame) {
