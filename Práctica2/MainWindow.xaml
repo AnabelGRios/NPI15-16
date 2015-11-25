@@ -18,15 +18,21 @@
         <Viewbox Grid.Row="1" Stretch="Uniform" HorizontalAlignment="Center">
             <Image Name="video_image" Width="640" Height="480"/>
         </Viewbox>
-        <Image Name="imageDalton1"  Height="301" Width="331" Margin="99,288,569,0" Stretch="UniformToFill"  Visibility="Visible"
+        <Image Name="imageDalton1"  Height="301" Width="331" Margin="99,288,569,0" Stretch="UniformToFill"  Visibility="Hidden"
            VerticalAlignment="Top" Grid.Row="1"/>
         <Image Name="imageDalton2" Height="146" Width="175" Margin="726,10,98,0" Stretch="UniformToFill"  Visibility="Hidden"
-           VerticalAlignment="Top" Grid.Row="1" RenderTransformOrigin="0.485,0.483"/>
+           VerticalAlignment="Top" Grid.Row="1"/>
         <Image Name="life_image" Height="65" Margin="99,0,696,0" Stretch="UniformToFill"  Visibility="Hidden"
            VerticalAlignment="Top" Grid.Row="1"/>
         <Image Name="fajita_image" Width="137" Height="81" Margin="257,99,604,0" Stretch="UniformToFill"  Visibility="Hidden"
            VerticalAlignment="Top" Grid.Row="1"/>
         <Image Name="measure_imagen" Height="316" Margin="10,273,673,0" Stretch="UniformToFill"  Visibility="Hidden"
+           VerticalAlignment="Top" Grid.Row="1"/>
+        <Image Name="messages_image" Source="/images/game_over.png"  Width="430" Height="146" Margin="560,443,10,0" Stretch="UniformToFill"  Visibility="Hidden"
+           VerticalAlignment="Top" Grid.Row="1"/>
+        <Image Name="exit_image"  Source="/images/salir.png" Width="320" Height="100" Margin="489,167,187,0" Stretch="UniformToFill"  Visibility="Hidden"
+           VerticalAlignment="Top" Grid.Row="1"/>
+        <Image Name="to_play_image" Source="/images/iniciar_juego.png" Width="320" Height="100" Margin="142,167,534,0" Stretch="UniformToFill"  Visibility="Hidden"
            VerticalAlignment="Top" Grid.Row="1"/>
         <Viewbox Grid.Row="1" Stretch="Uniform" HorizontalAlignment="Center">
             <Image Name="draw_image" Width="640" Height="480"/>

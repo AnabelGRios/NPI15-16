@@ -74,7 +74,6 @@ namespace NPI_2 {
         /// <summary>
         /// Gestures the user is going to do
         /// </summary>
-        Gesture exit;
         Gesture measuring;
         Gesture pause;
 
@@ -120,9 +119,12 @@ namespace NPI_2 {
 		/// <sumary>
 		/// User's life in the game
 		/// </sumary>
-		private int life = 3;
+		private int life = 0;
+
+        bool exit_hit = false;
 
 		InteractiveObject dalton1, dalton2, fajita, lives_object;
+        InteractiveObject exit_buttom, start_to_play_buttom;
 
         ///
         private Calculator calculator = new Calculator();
@@ -192,11 +194,13 @@ namespace NPI_2 {
         /// <param name="sender">object sending the event</param>
         /// <param name="e">event arguments</param>
         private void Sensor_ColorFrameReady(object sender, ColorImageFrameReadyEventArgs e) {
-            using (ColorImageFrame es = e.OpenColorImageFrame()) {
-                if (es != null) {
-                    byte[] bits = new byte[es.PixelDataLength];
-                    es.CopyPixelDataTo(bits);
-                    video_image.Source = BitmapSource.Create(es.Width, es.Height, 96, 96, PixelFormats.Bgr32, null, bits, es.Width * es.BytesPerPixel);
+            if (state == States.MEASURING_USER || state == States.SETTING_POSITION) {
+                using (ColorImageFrame es = e.OpenColorImageFrame()) {
+                    if (es != null) {
+                        byte[] bits = new byte[es.PixelDataLength];
+                        es.CopyPixelDataTo(bits);
+                        video_image.Source = BitmapSource.Create(es.Width, es.Height, 96, 96, PixelFormats.Bgr32, null, bits, es.Width * es.BytesPerPixel);
+                    }
                 }
             }
         }
@@ -238,17 +242,13 @@ namespace NPI_2 {
                         measuring.drawCircle(dc, 10, 3);
                         break;
                     case States.PLAYING:
+                    case States.PAUSED:
                         shoot.draw(dc,actual_frame);
-
                         break;
                 }
 
-                if (measured) {
-                    exit.drawCross(dc, 10);
-
-                    if (exit.isCompleted())
-                        this.WindowClosing(sender, new System.ComponentModel.CancelEventArgs());
-                }
+                if (exit_hit)
+                    this.WindowClosing(sender, new System.ComponentModel.CancelEventArgs());
 
                 // prevent drawing outside of our render area
                 this.drawingGroup.ClipGeometry = new RectangleGeometry(new Rect(0.0, 0.0, RenderWidth, RenderHeight));
@@ -315,17 +315,13 @@ namespace NPI_2 {
 
             shoot = new Shoot(my_KinectSensor , skel, forearm);
 
-            exit = new Gesture(calculator.sum(skel.Joints[JointType.Head].Position, -2 * (arm + forearm), -0.05, 0), JointType.HandLeft, my_KinectSensor, 1);
-            exit.setDistanceColor(0, Brushes.Purple);
-            exit.setDistanceColor(1, Brushes.Blue);
-            exit.setDistanceColor(2, Brushes.Gray);
-            exit.setTimeColor(Brushes.Red);
-
 			dalton1 = new InteractiveObject(ref imageDalton1, "JoeDalton.png", 160, 60);
 			dalton2 = new InteractiveObject(ref imageDalton2, "JoeDalton.png", 300, 60, actual_frame+1000);
 			lives_object = new InteractiveObject(ref life_image, "3.png", 0);
 			fajita = new InteractiveObject(ref fajita_image, "fajita.png", 160, 500);
 
+            exit_buttom = new InteractiveObject(ref exit_image, "salir.png", 0);
+            start_to_play_buttom = new InteractiveObject(ref to_play_image, "iniciar_juego.png", 0);
         }
 
         /// <summary>
@@ -367,15 +363,12 @@ namespace NPI_2 {
             measuring.adjustLocations(measuring_points);
             measuring.adjustColor(skel, actual_frame);
 
-            if (measuring.isCompleted()) {
+            if (measuring.isCompleted() && !measured) {
                 measured = true;
                 first_frame_measure = -1;   // To ensure that the next time that an user need to be measured, he is
-                state = States.PLAYING;
-                this.statusBarText.Text = "";
                 this.measure_imagen.Visibility = Visibility.Hidden;
-				imageDalton1.Visibility = Visibility.Visible;
-				initializeElements(skel, actual_frame);
-				lives_object.changeImage(3);
+                initializeElements(skel, actual_frame);
+                beginGame(actual_frame);
             }
         }
 
@@ -445,20 +438,23 @@ namespace NPI_2 {
 				Point shot_point;
 				bool dead = false;
 				bool dead_2 = false;
-				life_image.Visibility = Visibility.Visible;
+				
 				shoot.detect_shoot_movement(skel, actual_frame);
 				shot_point = shoot.getShotPointAndFrame(ref shot_frame);
 
-                dead = dalton1.isHit(shot_point, shot_frame);
-                dead_2 = dalton2.isHit(shot_point, shot_frame);
+                if (shot_point != new Point(0, 0) && shot_frame > -1) {
+                    dead = dalton1.isHit(shot_point, shot_frame);
+                    shot_point.X += 50;
+                    shot_point.Y += 60;
+                    dead_2 = dalton2.isHit(shot_point, shot_frame);
+                }
 
                 if (dalton1.isActive() && dalton1.isDeactivated(actual_frame)) {
                     if (!dead) {
                         life--;
                         lives_object.changeImage(life);
                         if (life == 0) {
-                            state = States.PAUSED;
-                            this.statusBarText.Text = "GAME OVER";
+                            beginPause(actual_frame);
                         }
                     }
                 }
@@ -472,8 +468,7 @@ namespace NPI_2 {
 						life--;
 						lives_object.changeImage(life);
 						if (life == 0) {
-							state = States.PAUSED;
-							this.statusBarText.Text = "GAME OVER";
+                            beginPause(actual_frame);
 						}
 					}
 				}
@@ -494,15 +489,61 @@ namespace NPI_2 {
 					fajita.changePosition(actual_frame, 300);
 				}
 
+                pause.adjustColor(skel, actual_frame);
+
 			}
 
             if( state== States.PAUSED) {
-				
-            }
+                int shot_frame = -1;
+                Point shot_point;
+                shoot.detect_shoot_movement(skel, actual_frame);
+                shot_point = shoot.getShotPointAndFrame(ref shot_frame);
+                
+                shot_point.X += 200;
+                shot_point.Y += 20;
+                if ( exit_buttom.isHit(shot_point, shot_frame)) {
+                        exit_hit = true;
+                }
 
-            if (measured)
-                exit.adjustColor(skel, actual_frame);
+                if ( start_to_play_buttom.isHit(shot_point, shot_frame) ) {
+                    beginGame(actual_frame);
+                }
+            }
         }
 
+        private void beginGame(int frame) {
+            state = States.PLAYING;
+            this.statusBarText.Text = "";
+            messages_image.Visibility = Visibility.Hidden;
+            lives_object.activate(frame);
+            dalton1.activate(frame);
+            exit_buttom.deactivate(frame);
+            start_to_play_buttom.deactivate(frame);
+            video_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/desert-landscape.png")));
+            fajita.setFirstActiveFrame(frame + 500);
+
+            if (life == 0) {
+                life = 3;
+                lives_object.changeImage(3);
+                dalton2.setFirstActiveFrame(frame + 500);
+            }
+        }
+
+        private void beginPause(int frame) {
+            state = States.PAUSED;
+
+            exit_buttom.activate(frame);
+            start_to_play_buttom.activate(frame);
+
+            if (life == 0) {
+                start_to_play_buttom.changeImage("../../images/iniciar_juego.png");
+                messages_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/game_over.png")));
+                messages_image.Visibility = Visibility.Visible;
+            }
+            else {
+                start_to_play_buttom.changeImage("../../images/volver_juego.png");
+            }
+
+        }
     }
 }
