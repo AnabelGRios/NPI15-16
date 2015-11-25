@@ -82,6 +82,10 @@ namespace NPI_2 {
            if (gestures[1].isCompleted() && actual_frame - frame_shoot < 50) {
                dc.DrawEllipse(null, new Pen(Brushes.Gainsboro, 6), actual_shot_point, 20, 20);
            }
+
+		   if (actual_frame - frame_shoot > 10) {
+			   frame_shoot = -1;
+		   }
         }
 
         public void detect_shoot_movement(Skeleton skel, int actual_frame) {
@@ -110,7 +114,7 @@ namespace NPI_2 {
             }
 
             if (shooting) {
-                if (actual_frame - first_frame_shooting > 60) {
+                if (actual_frame - first_frame_shooting > 30) {
                     shooting = false;
                 }
 

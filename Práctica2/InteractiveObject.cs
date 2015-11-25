@@ -55,7 +55,7 @@ namespace NPI_2 {
         /// This metod sets the position where the picture will show.
         /// </summary>
         /// <param name="img"></param>
-		public void changePosition(int actual_frame, int width = 765, int height = 589) {
+		public void changePosition(int actual_frame, int width = 745, int height = 570) {
 			Thickness margin = image.Margin;
 
             double margin_left = calculator.getRandomNumber((int)(width - image.Width));
@@ -117,6 +117,8 @@ namespace NPI_2 {
 		/// <returns></returns>
 		public bool isHit(Point point, int hit_frame) {
 			bool hit = false;
+			point.X *= 1.16;
+			point.Y *= 1.18;
 			if (image.Margin.Top <= point.Y && image.Margin.Top + image.Height >= point.Y &&
 				image.Margin.Left + image.Width >= point.X && image.Margin.Left <= point.X &&
 				hit_frame > first_active_frame && active) {
@@ -127,7 +129,7 @@ namespace NPI_2 {
 		}
 
 		public bool isDeactivated(int actual_frame) {
-			bool in_time = (actual_frame < first_active_frame + getFrequency() && actual_frame > first_active_frame);
+			bool in_time = (actual_frame < first_active_frame + getFrequency() && actual_frame >= first_active_frame);
 			if (!in_time && active) {
                 deactivate(actual_frame);
 			}
@@ -153,6 +155,10 @@ namespace NPI_2 {
         public void setFirstActiveFrame(int frame) {
             first_active_frame = frame;
         }
+
+		public int getFirstFrame() {
+			return first_active_frame;
+		}
 
     }
 }

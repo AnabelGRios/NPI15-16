@@ -124,7 +124,7 @@ namespace NPI_2 {
         bool exit_hit = false;
 
 		InteractiveObject dalton1, dalton2, fajita, lives_object;
-        InteractiveObject exit_buttom, start_to_play_buttom;
+        InteractiveObject exit_button, start_to_play_button;
 
         ///
         private Calculator calculator = new Calculator();
@@ -316,12 +316,13 @@ namespace NPI_2 {
             shoot = new Shoot(my_KinectSensor , skel, forearm);
 
 			dalton1 = new InteractiveObject(ref imageDalton1, "JoeDalton.png", 160, 60);
-			dalton2 = new InteractiveObject(ref imageDalton2, "JoeDalton.png", 300, 60, actual_frame+1000);
+			dalton2 = new InteractiveObject(ref imageDalton2, "JoeDalton2.png", 300, 120, actual_frame+1000);
 			lives_object = new InteractiveObject(ref life_image, "3.png", 0);
 			fajita = new InteractiveObject(ref fajita_image, "fajita.png", 160, 500);
 
-            exit_buttom = new InteractiveObject(ref exit_image, "salir.png", 0);
-            start_to_play_buttom = new InteractiveObject(ref to_play_image, "iniciar_juego.png", 0);
+            exit_button = new InteractiveObject(ref exit_image, "salir.png", 0);
+            start_to_play_button = new InteractiveObject(ref to_play_image, "iniciar_juego.png", 0);
+			spock_hand.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/spock.png")));
         }
 
         /// <summary>
@@ -441,27 +442,32 @@ namespace NPI_2 {
 				
 				shoot.detect_shoot_movement(skel, actual_frame);
 				shot_point = shoot.getShotPointAndFrame(ref shot_frame);
+				
+				dead = dalton1.isHit(shot_point, shot_frame);
+				//shot_point.X += 50;
+				//shot_point.Y += 60;
+				dead_2 = dalton2.isHit(shot_point, shot_frame);
 
-                if (shot_point != new Point(0, 0) && shot_frame > -1) {
-                    dead = dalton1.isHit(shot_point, shot_frame);
-                    shot_point.X += 50;
-                    shot_point.Y += 60;
-                    dead_2 = dalton2.isHit(shot_point, shot_frame);
-                }
+				if (dead || dead_2) {
+					if (shot_frame < dalton1.getFirstFrame())
+						dead = false;
+					if (shot_frame < dalton2.getFirstFrame())
+						dead_2 = false;
+				}
 
-                if (dalton1.isActive() && dalton1.isDeactivated(actual_frame)) {
-                    if (!dead) {
-                        life--;
-                        lives_object.changeImage(life);
-                        if (life == 0) {
-                            beginPause(actual_frame);
-                        }
-                    }
-                }
+				if (dalton1.isActive() && dalton1.isDeactivated(actual_frame)) {
+					if (!dead) {
+						life--;
+						lives_object.changeImage(life);
+						if (life == 0) {
+							beginPause(actual_frame);
+						}
+					}
+				}
 
-                if (!dalton1.isActive() && dalton1.past_delay(actual_frame)) {
-                    dalton1.changePosition(actual_frame);
-                }
+				if (!dalton1.isActive() && dalton1.past_delay(actual_frame)) {
+					dalton1.changePosition(actual_frame);
+				}
 
 				if (dalton2.isActive() && dalton2.isDeactivated(actual_frame)) {
 					if (!dead_2) {
@@ -483,6 +489,22 @@ namespace NPI_2 {
 						life++;
 						lives_object.changeImage(life);
 					}
+
+					Thickness margin = spock_hand.Margin;
+
+					double margin_left = left_hand.X - spock_hand.Width/2;
+					double margin_right = RenderWidth - margin_left - spock_hand.Width;
+					double margin_top = left_hand.Y - spock_hand.Height / 2;
+
+					margin.Left = margin_left;
+					margin.Right = margin_right;
+					margin.Top = margin_top;
+
+					spock_hand.Margin = margin;
+					spock_hand.Visibility = Visibility.Visible;
+				}
+				else {
+					spock_hand.Visibility = Visibility.Hidden;
 				}
 
 				if (life < 3 && !fajita.isActive() && fajita.past_delay(actual_frame)) {
@@ -499,13 +521,13 @@ namespace NPI_2 {
                 shoot.detect_shoot_movement(skel, actual_frame);
                 shot_point = shoot.getShotPointAndFrame(ref shot_frame);
                 
-                shot_point.X += 200;
-                shot_point.Y += 20;
-                if ( exit_buttom.isHit(shot_point, shot_frame)) {
+				shot_point.X += 100;
+				
+                if ( exit_button.isHit(shot_point, shot_frame)) {
                         exit_hit = true;
                 }
 
-                if ( start_to_play_buttom.isHit(shot_point, shot_frame) ) {
+                if ( start_to_play_button.isHit(shot_point, shot_frame) ) {
                     beginGame(actual_frame);
                 }
             }
@@ -517,31 +539,31 @@ namespace NPI_2 {
             messages_image.Visibility = Visibility.Hidden;
             lives_object.activate(frame);
             dalton1.activate(frame);
-            exit_buttom.deactivate(frame);
-            start_to_play_buttom.deactivate(frame);
+            exit_button.deactivate(frame);
+            start_to_play_button.deactivate(frame);
             video_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/desert-landscape.png")));
             fajita.setFirstActiveFrame(frame + 500);
 
             if (life == 0) {
                 life = 3;
                 lives_object.changeImage(3);
-                dalton2.setFirstActiveFrame(frame + 500);
+                dalton2.setFirstActiveFrame(frame+1000);
             }
         }
 
         private void beginPause(int frame) {
             state = States.PAUSED;
 
-            exit_buttom.activate(frame);
-            start_to_play_buttom.activate(frame);
+            exit_button.activate(frame);
+            start_to_play_button.activate(frame);
 
             if (life == 0) {
-                start_to_play_buttom.changeImage("../../images/iniciar_juego.png");
+                start_to_play_button.changeImage("../../images/iniciar_juego.png");
                 messages_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/game_over.png")));
                 messages_image.Visibility = Visibility.Visible;
             }
             else {
-                start_to_play_buttom.changeImage("../../images/volver_juego.png");
+                start_to_play_button.changeImage("../../images/volver_juego.png");
             }
 
         }
