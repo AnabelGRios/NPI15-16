@@ -9,7 +9,7 @@
 
 //------------------------------------------------------------------------------
 // Authors: Anabel Gómez Ríos, Jacinto Carrasco Castillo
-// Date: 30-10-2015
+// Date: 26-11-2015
 //------------------------------------------------------------------------------
 
 /*    This file is part of NPI_2.
@@ -307,6 +307,8 @@ namespace NPI_2 {
                 this.statusBarText.Text = "";
                 this.measured = false;                      //Remeasure the user if it's not captured by the sensor
                 state = States.SETTING_POSITION;
+                to_play_image.Visibility = Visibility.Hidden;
+                exit_image.Visibility = Visibility.Hidden;
             }
         }
 
