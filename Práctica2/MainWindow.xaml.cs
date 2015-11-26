@@ -40,7 +40,7 @@ namespace NPI_2 {
     /// <summary>
     /// Possible states of the application
     /// </summary>
-    enum States { SETTING_POSITION, MEASURING_USER, PLAYING, PAUSED };
+    enum States { SETTING_POSITION, MEASURING_USER, PLAYING, PAUSED, TUTORIAL };
 
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -123,6 +123,13 @@ namespace NPI_2 {
 
         bool exit_hit = false;
 
+		/// <summary>
+		/// Control the time of the tutorial images
+		/// </summary>
+		int first_tutorial_image_first_frame = -1;
+		int second_tutorial_image_first_frame = -1;
+		int third_tutorial_image_first_frame = -1;
+
 		InteractiveObject dalton1, dalton2, fajita, lives_object;
         InteractiveObject exit_button, start_to_play_button;
 
@@ -194,7 +201,7 @@ namespace NPI_2 {
         /// <param name="sender">object sending the event</param>
         /// <param name="e">event arguments</param>
         private void Sensor_ColorFrameReady(object sender, ColorImageFrameReadyEventArgs e) {
-            if (state == States.MEASURING_USER || state == States.SETTING_POSITION) {
+            if (state != States.PLAYING && state != States.PAUSED) {
                 using (ColorImageFrame es = e.OpenColorImageFrame()) {
                     if (es != null) {
                         byte[] bits = new byte[es.PixelDataLength];
@@ -241,6 +248,7 @@ namespace NPI_2 {
                         measuring.drawCircle(dc, 10, 2);
                         measuring.drawCircle(dc, 10, 3);
                         break;
+					case States.TUTORIAL:
                     case States.PLAYING:
                     case States.PAUSED:
                         shoot.draw(dc,actual_frame);
@@ -316,13 +324,18 @@ namespace NPI_2 {
             shoot = new Shoot(my_KinectSensor , skel, forearm);
 
 			dalton1 = new InteractiveObject(ref imageDalton1, "JoeDalton.png", 160, 60);
-			dalton2 = new InteractiveObject(ref imageDalton2, "JoeDalton2.png", 300, 120, actual_frame+1000);
+			dalton2 = new InteractiveObject(ref imageDalton2, "JoeDalton2.png", 300, 120);
 			lives_object = new InteractiveObject(ref life_image, "3.png", 0);
 			fajita = new InteractiveObject(ref fajita_image, "fajita.png", 160, 500);
 
             exit_button = new InteractiveObject(ref exit_image, "salir.png", 0);
             start_to_play_button = new InteractiveObject(ref to_play_image, "iniciar_juego.png", 0);
 			spock_hand.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/spock.png")));
+			tutorial_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/gesto_1.png")));
+
+			first_tutorial_image_first_frame = actual_frame;
+			second_tutorial_image_first_frame = actual_frame + 250;
+			third_tutorial_image_first_frame = actual_frame + 500;
         }
 
         /// <summary>
@@ -369,7 +382,7 @@ namespace NPI_2 {
                 first_frame_measure = -1;   // To ensure that the next time that an user need to be measured, he is
                 this.measure_imagen.Visibility = Visibility.Hidden;
                 initializeElements(skel, actual_frame);
-                beginGame(actual_frame);
+				state = States.TUTORIAL;
             }
         }
 
@@ -433,6 +446,33 @@ namespace NPI_2 {
             if (state == States.MEASURING_USER) {
                 measureUser(skel, actual_frame);
             }
+
+			if (state == States.TUTORIAL) {
+				if (actual_frame - first_tutorial_image_first_frame < 250) {
+					tutorial_image.Visibility = Visibility.Visible;
+					this.statusBarText.Text = "Ponte en esta posición para \n apuntar. Habrás apuntado \n cuando salga el círculo azul";
+				}
+				else if (actual_frame - second_tutorial_image_first_frame < 250) {
+					tutorial_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/gesto_2.png")));
+					this.statusBarText.Text = "Una vez hayas apuntado, \n sube el brazo rápido para \ndisparar. El círculo se pondrá \ngris.";
+				}
+				else if (actual_frame - third_tutorial_image_first_frame < 250) {
+					tutorial_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/gesto_3.png")));
+					this.statusBarText.Text = "Puedes ponerte en esta \nposición para ir al menú \npausa.";
+				}
+				else {
+					this.statusBarText.Text = "";
+					tutorial_image.Visibility = Visibility.Hidden;
+					beginPause(actual_frame);
+				}
+
+				int shot_frame = -1;
+				Point shot_point;
+
+				shoot.detect_shoot_movement(skel, actual_frame);
+				shot_point = shoot.getShotPointAndFrame(ref shot_frame);
+
+			}
 
 			if (state == States.PLAYING) {
 				int shot_frame = -1;
@@ -542,7 +582,7 @@ namespace NPI_2 {
             exit_button.deactivate(frame);
             start_to_play_button.deactivate(frame);
             video_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/desert-landscape.png")));
-            fajita.setFirstActiveFrame(frame + 500);
+            fajita.setFirstActiveFrame(frame + 1000);
 
             if (life == 0) {
                 life = 3;
@@ -554,6 +594,7 @@ namespace NPI_2 {
         private void beginPause(int frame) {
             state = States.PAUSED;
 
+			video_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/desert-landscape.png")));
             exit_button.activate(frame);
             start_to_play_button.activate(frame);
 

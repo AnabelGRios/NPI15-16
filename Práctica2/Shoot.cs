@@ -72,10 +72,10 @@ namespace NPI_2 {
 
         public void draw(DrawingContext dc, int actual_frame) {
            if (!shooting && !pointed) {
-                dc.DrawEllipse(null, new Pen(Brushes.LightSalmon, 6), shoot_objective, 20, 20);
+			   dc.DrawEllipse(null, new Pen(Brushes.LightSalmon, 6), shoot_objective, 20, 20);
            }
            else {
-               dc.DrawEllipse(null, new Pen(Brushes.LightSalmon, 6), shoot_objective, 20, 20);
+			   dc.DrawEllipse(null, new Pen(Brushes.LightSalmon, 6), shoot_objective, 20, 20);
                dc.DrawEllipse(null, new Pen(Brushes.Blue, 6), actual_shot_point, 15, 15);
            }
 
