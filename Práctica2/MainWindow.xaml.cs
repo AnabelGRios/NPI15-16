@@ -131,7 +131,7 @@ namespace NPI_2 {
 		int third_tutorial_image_first_frame = -1;
 
 		InteractiveObject dalton1, dalton2, fajita, lives_object;
-        InteractiveObject exit_button, start_to_play_button;
+        InteractiveObject exit_button, start_to_play_button, exit_tutorial;
 
         ///
         private Calculator calculator = new Calculator();
@@ -248,12 +248,12 @@ namespace NPI_2 {
                         measuring.drawCircle(dc, 10, 2);
                         measuring.drawCircle(dc, 10, 3);
                         break;
-					case States.TUTORIAL:
                     case States.PLAYING:
                         pause.drawCircle(dc, 10, 0);
                         pause.drawCircle(dc, 10, 1);
                         shoot.draw(dc, actual_frame);
                         break;
+                    case States.TUTORIAL:
                     case States.PAUSED:
                         shoot.draw(dc,actual_frame);
                         break;
@@ -334,6 +334,8 @@ namespace NPI_2 {
 
             exit_button = new InteractiveObject(ref exit_image, "salir.png", 0);
             start_to_play_button = new InteractiveObject(ref to_play_image, "iniciar_juego.png", 0);
+            exit_tutorial = new InteractiveObject(ref exit_tutorial_image, "salir_tutorial.png", 0);
+
 			spock_hand.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/spock.png")));
 			tutorial_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/gesto_1.png")));
 
@@ -387,6 +389,7 @@ namespace NPI_2 {
                 this.measure_imagen.Visibility = Visibility.Hidden;
                 initializeElements(skel, actual_frame);
 				state = States.TUTORIAL;
+                exit_tutorial.activate(actual_frame);
             }
         }
 
@@ -476,6 +479,15 @@ namespace NPI_2 {
 				shoot.detect_shoot_movement(skel, actual_frame);
 				shot_point = shoot.getShotPointAndFrame(ref shot_frame);
 
+                if (shot_point != new Point(0, 0) && shot_frame > -1) {
+                    shot_point.X += 100;
+
+                    if (exit_tutorial.isHit(shot_point, shot_frame)) {
+                        this.statusBarText.Text = "";
+                        tutorial_image.Visibility = Visibility.Hidden;
+                        beginPause(actual_frame);
+                    }
+                }
 			}
 
 			if (state == States.PLAYING) {
@@ -502,6 +514,8 @@ namespace NPI_2 {
 						life--;
 						lives_object.changeImage(life);
 						if (life == 0) {
+                            messages_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/game_over.png")));
+                            messages_image.Visibility = Visibility.Visible;
 							beginPause(actual_frame);
 						}
 					}
@@ -516,6 +530,8 @@ namespace NPI_2 {
 						life--;
 						lives_object.changeImage(life);
 						if (life == 0) {
+                            messages_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/game_over.png")));
+                            messages_image.Visibility = Visibility.Visible;
                             beginPause(actual_frame);
 						}
 					}
@@ -601,6 +617,8 @@ namespace NPI_2 {
         }
 
         private void beginPause(int frame) {
+
+            exit_tutorial.deactivate(frame);
             state = States.PAUSED;
 
 			video_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/desert-landscape.png")));
@@ -609,8 +627,6 @@ namespace NPI_2 {
 
             if (life == 0) {
                 start_to_play_button.changeImage("../../images/iniciar_juego.png");
-                messages_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/game_over.png")));
-                messages_image.Visibility = Visibility.Visible;
             }
             else {
                 start_to_play_button.changeImage("../../images/volver_juego.png");

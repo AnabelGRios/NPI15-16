@@ -34,6 +34,8 @@
            VerticalAlignment="Top" Grid.Row="1"/>
         <Image Name="to_play_image" Source="/images/iniciar_juego.png" Width="320" Height="100" Margin="142,167,534,0" Stretch="UniformToFill"  Visibility="Hidden"
            VerticalAlignment="Top" Grid.Row="1"/>
+        <Image Name="exit_tutorial_image" Source="/images/salir_tutorial.png" Height="80" Width="250" Margin="676,0,78,0" Stretch="UniformToFill"  Visibility="Visible"
+           VerticalAlignment="Top" Grid.Row="1"/>
         <Image Name="spock_hand" Source="/images/spock.png"  Width="82" Height="82" Margin="142,167,769,0" Stretch="UniformToFill"  Visibility="Hidden"
            VerticalAlignment="Top" Grid.Row="1"/>
         <Image Name="tutorial_image" Height="367" Margin="99,222,566,0" Stretch="UniformToFill"  Visibility="Hidden"
