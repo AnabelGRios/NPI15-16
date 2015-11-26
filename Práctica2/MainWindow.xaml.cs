@@ -242,6 +242,10 @@ namespace NPI_2 {
                         measuring.drawCircle(dc, 10, 3);
                         break;
                     case States.PLAYING:
+                        pause.drawCircle(dc, 10, 0);
+                        pause.drawCircle(dc, 10, 1);
+                        shoot.draw(dc, actual_frame);
+                        break;
                     case States.PAUSED:
                         shoot.draw(dc,actual_frame);
                         break;
@@ -300,8 +304,8 @@ namespace NPI_2 {
         /// <param name="skel">Skeleton tracked to determine guides positions</param>
         private void initializeElements(Skeleton skel, int actual_frame) {
             SkeletonPoint[] pause_points = new SkeletonPoint[2];
-            pause_points[0] = calculator.sum(skel.Joints[JointType.HipRight].Position, 0.2, 0, -0.1);
-            pause_points[1] = calculator.sum(skel.Joints[JointType.HipLeft].Position, -0.2, 0, -0.1);
+            pause_points[0] = calculator.sum(skel.Joints[JointType.ShoulderRight].Position, arm, forearm, -0.1);
+            pause_points[1] = calculator.sum(skel.Joints[JointType.ShoulderLeft].Position, -arm, -forearm, -0.1);
             JointType[] pause_joints = new JointType[2];
             pause_joints[0] = JointType.HandRight;
             pause_joints[1] = JointType.HandLeft;
@@ -444,8 +448,6 @@ namespace NPI_2 {
 				shot_point = shoot.getShotPointAndFrame(ref shot_frame);
 				
 				dead = dalton1.isHit(shot_point, shot_frame);
-				//shot_point.X += 50;
-				//shot_point.Y += 60;
 				dead_2 = dalton2.isHit(shot_point, shot_frame);
 
 				if (dead || dead_2) {
@@ -512,6 +514,13 @@ namespace NPI_2 {
 				}
 
                 pause.adjustColor(skel, actual_frame);
+                SkeletonPoint[] pause_points = new SkeletonPoint[2];
+                pause_points[0] = calculator.sum(skel.Joints[JointType.ShoulderRight].Position, arm, forearm, -0.1);
+                pause_points[1] = calculator.sum(skel.Joints[JointType.ShoulderLeft].Position, -arm, forearm, -0.1);
+                pause.adjustLocations(pause_points);
+                if (pause.isCompleted()) {
+                    beginPause(actual_frame);
+                }
 
 			}
 
