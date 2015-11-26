@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------------------------
 // <copyright file="MainWindow.xaml.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
-//     Methods WindowLoaded, SkeletonPointToScreen
+//     Methods WindowLoaded
 //     Variables RenderWidth, RenderHeight, drawingGroup
 //     XAML Code
 // </copyright>
@@ -77,6 +77,9 @@ namespace NPI_2 {
         Gesture measuring;
         Gesture pause;
 
+        /// <summary>
+        /// Shoot object to interactuate with the application.
+        /// </summary>
         Shoot shoot;
 
         /// <summary>
@@ -88,12 +91,6 @@ namespace NPI_2 {
         /// State of the application
         /// </summary>
         private States state = States.SETTING_POSITION;
-
-        /// <summary>
-        /// Information to know if the user is situated
-        /// </summary>
-        bool situated = false;
-        int first_wrong_frame = -1;
 
         /// <summary>
         /// Information to know if the user's been measured
@@ -121,6 +118,9 @@ namespace NPI_2 {
 		/// </sumary>
 		private int life = 0;
 
+        /// <summary>
+        /// If the user's shot in the exit button
+        /// </summary>
         bool exit_hit = false;
 
 		/// <summary>
@@ -130,10 +130,15 @@ namespace NPI_2 {
 		int second_tutorial_image_first_frame = -1;
 		int third_tutorial_image_first_frame = -1;
 
+        /// <summary>
+        /// Interactive objects to interactuate with and buttons
+        /// </summary>
 		InteractiveObject dalton1, dalton2, fajita, lives_object;
         InteractiveObject exit_button, start_to_play_button, exit_tutorial;
 
-        ///
+        /// <summary>
+        /// Calculator object to calculate distances and projections.
+        /// </summary>
         private Calculator calculator = new Calculator();
 
         /// <summary>
@@ -411,18 +416,14 @@ namespace NPI_2 {
                     if (!measured)
                         state = States.MEASURING_USER;
                     else
-                        state = States.PAUSED;
+                        beginPause(actual_frame);
 
-                    situated = true;
                 }
                 else {
                     // We give the instructions to situate the user
                     situation_pen = new Pen(Brushes.Red, 6);
 
-                    if (actual_frame - first_wrong_frame < 60) {
-                        this.statusBarText.Text = "Vamos a volver a coger \n la posición";
-                    }
-                    else if (point_head.Y > height_up + tolerance) {
+                    if (point_head.Y > height_up + tolerance) {
                         this.statusBarText.Text = "Acércate";
                     }
                     else if (point_head.Y < height_up - tolerance) {
@@ -436,18 +437,6 @@ namespace NPI_2 {
                     }
 
                 }
-
-            }
-            else if (Math.Abs(point_head.Y - height_up) > tolerance || Math.Abs(RenderWidth * 0.5 - point_head.X) > tolerance) {
-                /*if (actual_frame - first_wrong_frame > 30)
-                    state = States.SETTING_POSITION;*/
-
-                if (situated)
-                    situated = false;
-            }
-            else {
-                situated = true;
-                first_wrong_frame = actual_frame;
             }
 
             if (state == States.MEASURING_USER) {
@@ -479,14 +468,13 @@ namespace NPI_2 {
 				shoot.detect_shoot_movement(skel, actual_frame);
 				shot_point = shoot.getShotPointAndFrame(ref shot_frame);
 
-                if (shot_point != new Point(0, 0) && shot_frame > -1) {
-                    shot_point.X += 100;
+                shot_point.X += 100;
 
-                    if (exit_tutorial.isHit(shot_point, shot_frame)) {
-                        this.statusBarText.Text = "";
-                        tutorial_image.Visibility = Visibility.Hidden;
-                        beginPause(actual_frame);
-                    }
+                //Comprueba si hemos dado al botón para saltarnos el tutorial
+                if (exit_tutorial.isHit(shot_point, shot_frame)) {
+                    this.statusBarText.Text = "";
+                    tutorial_image.Visibility = Visibility.Hidden;
+                    beginPause(actual_frame);
                 }
 			}
 
@@ -499,48 +487,49 @@ namespace NPI_2 {
 				shoot.detect_shoot_movement(skel, actual_frame);
 				shot_point = shoot.getShotPointAndFrame(ref shot_frame);
 				
+                // Comprobamos si hemos matado a uno de los hermanos Dalton
 				dead = dalton1.isHit(shot_point, shot_frame);
 				dead_2 = dalton2.isHit(shot_point, shot_frame);
 
-				if (dead || dead_2) {
-					if (shot_frame < dalton1.getFirstFrame())
-						dead = false;
-					if (shot_frame < dalton2.getFirstFrame())
-						dead_2 = false;
-				}
-
-				if (dalton1.isActive() && dalton1.isDeactivated(actual_frame)) {
-					if (!dead) {
-						life--;
-						lives_object.changeImage(life);
-						if (life == 0) {
-                            messages_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/game_over.png")));
-                            messages_image.Visibility = Visibility.Visible;
-							beginPause(actual_frame);
-						}
+                // Comprobamos si no ha muerto y debe quitarnos una vida
+				if (dalton1.isActive() && !dead && dalton1.isDeactivated(actual_frame)) {
+					life--;
+					lives_object.changeImage(life);
+					if (life == 0) {
+                        messages_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/game_over.png")));
+                        messages_image.Visibility = Visibility.Visible;
+						beginPause(actual_frame);
 					}
 				}
 
+                // Comprobamos si debe volver a aparecer
 				if (!dalton1.isActive() && dalton1.past_delay(actual_frame)) {
 					dalton1.changePosition(actual_frame);
 				}
 
-				if (dalton2.isActive() && dalton2.isDeactivated(actual_frame)) {
-					if (!dead_2) {
-						life--;
-						lives_object.changeImage(life);
-						if (life == 0) {
-                            messages_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/game_over.png")));
-                            messages_image.Visibility = Visibility.Visible;
-                            beginPause(actual_frame);
-						}
+                // Comprobamos si no ha muerto y debe quitarnos una vida
+				if (dalton2.isActive() && !dead_2 && dalton2.isDeactivated(actual_frame)) {
+					life--;
+					lives_object.changeImage(life);
+					if (life == 0) {
+                        messages_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/game_over.png")));
+                        messages_image.Visibility = Visibility.Visible;
+                        beginPause(actual_frame);
 					}
 				}
 
+                // Comprobamos si debe volver a aparecer
 				if (!dalton2.isActive() && dalton2.past_delay(actual_frame)) {
 					dalton2.changePosition(actual_frame);
 				}
 
+
+                // Hacemos aparecer una fajita si ha pasado un determinado tiempo y el jugador tiene menos de 3 vidas
+                if (life < 3 && !fajita.isActive() && fajita.past_delay(actual_frame)) {
+                    fajita.changePosition(actual_frame, 300);
+                }
+
+                // Comprobamos que el jugador ha cogido la fajita con la mano izquierda
 				if (life < 3 && fajita.isActive() && !fajita.isDeactivated(actual_frame)) {
 					Point left_hand = calculator.SkeletonPointToScreen(my_KinectSensor, skel.Joints[JointType.HandLeft].Position);
 					if (fajita.isHit(left_hand, actual_frame)) {
@@ -565,10 +554,7 @@ namespace NPI_2 {
 					spock_hand.Visibility = Visibility.Hidden;
 				}
 
-				if (life < 3 && !fajita.isActive() && fajita.past_delay(actual_frame)) {
-					fajita.changePosition(actual_frame, 300);
-				}
-
+                // Comprobamos si el jugador quiere pausar el juego.
                 pause.adjustColor(skel, actual_frame);
                 SkeletonPoint[] pause_points = new SkeletonPoint[2];
                 pause_points[0] = calculator.sum(skel.Joints[JointType.ShoulderRight].Position, arm, forearm, -0.1);
@@ -588,6 +574,7 @@ namespace NPI_2 {
                 
 				shot_point.X += 100;
 				
+                // Comprobamos si el jugador le ha dado a uno de los dos botones del menú
                 if ( exit_button.isHit(shot_point, shot_frame)) {
                         exit_hit = true;
                 }
@@ -598,17 +585,25 @@ namespace NPI_2 {
             }
         }
 
+        /// <summary>
+        /// Realiza los cambios visuales necesarios para entrar en el juego
+        /// </summary>
+        /// <param name="frame"></param>
         private void beginGame(int frame) {
             state = States.PLAYING;
+
             this.statusBarText.Text = "";
             messages_image.Visibility = Visibility.Hidden;
-            lives_object.activate(frame);
-            dalton1.activate(frame);
             exit_button.deactivate(frame);
             start_to_play_button.deactivate(frame);
+
             video_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/desert-landscape.png")));
+
+            lives_object.activate(frame);
+            dalton1.activate(frame);
             fajita.setFirstActiveFrame(frame + 1000);
 
+            // Pone el contador de vidas a 3 para iniciar un nuevo juego
             if (life == 0) {
                 life = 3;
                 lives_object.changeImage(3);
@@ -616,6 +611,10 @@ namespace NPI_2 {
             }
         }
 
+        /// <summary>
+        /// Realiza los cambios visuales necesarios para entrar en el estado de pausa
+        /// </summary>
+        /// <param name="frame"></param>
         private void beginPause(int frame) {
 
             exit_tutorial.deactivate(frame);

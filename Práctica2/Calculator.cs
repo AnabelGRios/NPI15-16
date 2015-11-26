@@ -1,4 +1,30 @@
-﻿using System;
+﻿//------------------------------------------------------------------------------
+// <copyright file="MainWindow.xaml.cs" company="Microsoft">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+//     Methods SkeletonPointToScreen
+// </copyright>
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+// Authors: Anabel Gómez Ríos, Jacinto Carrasco Castillo
+// Date: 30-10-2015
+//------------------------------------------------------------------------------
+
+/*    This file is part of NPI_2.
+    NPI_2 is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    NPI_2 is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
+    GNU General Public License for more details.
+
+    See<http://www.gnu.org/licenses/>.
+*/
+
+using System;
 using System.IO;
 using System.Windows;
 using System.Windows.Media;
@@ -6,8 +32,16 @@ using System.Windows.Media.Imaging;
 using Microsoft.Kinect;
 
 namespace NPI_2 {
+    /// <summary>
+    /// Métodos que realizan cálculos con la clase SkeletonPoint accesibles en varias clases
+    /// </summary>
     class Calculator {
-
+        /// <summary>
+        /// Distancia euclídea entre dos puntos del espacio
+        /// </summary>
+        /// <param name="a">Primer punto</param>
+        /// <param name="b">Segundo punto</param>
+        /// <returns></returns>
         public float distance(SkeletonPoint a, SkeletonPoint b) {
             float distance = (float)Math.Sqrt((double)(Math.Pow((a.X - b.X), 2) +
                 Math.Pow((a.Y - b.Y), 2) +
@@ -59,6 +93,11 @@ namespace NPI_2 {
             return sum;
         }
 
+        /// <summary>
+        /// Método para obtener un entero aleatorio
+        /// </summary>
+        /// <param name="max_number"> Extremo superior del rango de números posibles</param>
+        /// <returns></returns>
         public int getRandomNumber(int max_number) {
             Random random = new Random();
             return (random.Next() % max_number) + 1;

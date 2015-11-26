@@ -60,19 +60,10 @@ namespace NPI_2 {
         private float seconds;
         private int first_frame;
 
-        private Calculator calculator;
-
         /// <summary>
-        /// Maps a SkeletonPoint to lie within our render space and converts to Point
+        /// Objeto calculador para calcular distancias y proyecciones.
         /// </summary>
-        /// <param name="skelpoint">point to map</param>
-        /// <returns>mapped point</returns>
-        public Point SkeletonPointToScreen(SkeletonPoint skelpoint) {
-            // Convert point to depth space.  
-            // We are not using depth directly, but we do want the points in our 640x480 output resolution.
-            DepthImagePoint depthPoint = sensor.CoordinateMapper.MapSkeletonPointToDepthPoint(skelpoint, DepthImageFormat.Resolution640x480Fps30);
-            return new Point(depthPoint.X, depthPoint.Y);
-        }
+        private Calculator calculator;
 
         /// <summary>
         /// Initialize distance and time colors.
@@ -110,8 +101,9 @@ namespace NPI_2 {
             this.pens[0] = new Pen(Brushes.Blue, 6);
 
             this.sensor = sensor;
+            this.calculator = new Calculator();
             this.screen_locations = new Point[1];
-            this.screen_locations[0] = SkeletonPointToScreen(locations[0]);
+            this.screen_locations[0] = calculator.SkeletonPointToScreen(sensor, locations[0]);
 
             this.seconds = seconds;
             this.tolerance = tolerance;
@@ -136,11 +128,12 @@ namespace NPI_2 {
             this.joints = joints;
 
             this.pens = new Pen[locations.Length];
+            this.calculator = new Calculator();
 
             this.sensor = sensor;
             this.screen_locations = new Point[locations.Length];
             for (int i = 0; i < locations.Length; i++) {
-                this.screen_locations[i] = SkeletonPointToScreen(locations[i]);
+                this.screen_locations[i] =  calculator.SkeletonPointToScreen(sensor,locations[i]);
             }
 
             this.seconds = seconds;
@@ -271,24 +264,6 @@ namespace NPI_2 {
         }
 
         /// <summary>
-        /// Draw a circle
-        /// </summary>
-        /// <param name="dc">drawing context</param>
-        /// <param name="radius">Radius of the cross</param>
-        /// <param name="i">Screen location of the centre</param>
-        public void drawCross(DrawingContext dc, float radius, int i = 0) {
-            Point centre = screen_locations[i];
-            if (centre.X < radius) {
-                centre.X = radius;
-            }
-            if (centre.Y < radius) {
-                centre.Y = radius;
-            }
-            dc.DrawLine(pens[i], new Point(centre.X - radius, centre.Y + radius), new Point(centre.X + radius, centre.Y - radius));
-            dc.DrawLine(pens[i], new Point(centre.X - radius, centre.Y - radius), new Point(centre.X + radius, centre.Y + radius));
-        }
-
-        /// <summary>
         /// Get a specific Pen
         /// </summary>
         /// <param name="i">Number of the pen</param>
@@ -309,7 +284,7 @@ namespace NPI_2 {
         /// <param name="new_locations">New locations of the gesture</param>
         public void adjustLocations(SkeletonPoint new_location) {
             locations[0] = new_location;
-            screen_locations[0] = SkeletonPointToScreen(new_location);
+            screen_locations[0] =  calculator.SkeletonPointToScreen(sensor,new_location);
         }
 
 
@@ -320,7 +295,7 @@ namespace NPI_2 {
         public void adjustLocations(SkeletonPoint[] new_locations) {
             for (int i = 0; i < locations.Length; i++) {
                 locations[i] = new_locations[i];
-                screen_locations[i] = SkeletonPointToScreen(new_locations[i]);
+                screen_locations[i] =  calculator.SkeletonPointToScreen(sensor,new_locations[i]);
             }
         }
 

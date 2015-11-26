@@ -23,15 +23,23 @@ using System.Windows;
 using System.Windows.Media.Imaging;
 
 namespace NPI_2 {
+    /// <summary>
+    /// Objeto dinámico que incluye una imagen y con el cual el usuario puede interactuar.
+    /// </summary>
     class InteractiveObject {
 
-        private float frequency;    // Frequency the object is show
-        private Image image;    // The object that will be shown
-		private Calculator calculator;
-		private int first_active_frame = -1;
-		private int first_deactivate_frame = -1;
-		private bool active = false;
-		float delay = -1;
+        
+        private Image image;    // The image where the object will be shown
+
+		private bool active = false;    // Estado del objeto
+
+        private float frequency;    // Tiempo activo en pantalla
+		float delay = -1;           // Retardo entre apariciones.
+
+        private int first_active_frame = -1;        
+        private int first_deactivate_frame = -1;
+
+        private Calculator calculator;
 
 		private const float RenderWidth = 640.0f;
 		private const float RenderHeight = 480.0f;
@@ -39,8 +47,8 @@ namespace NPI_2 {
         /// <summary>
         /// Constructor of the class
         /// </summary>
-        /// <param name="img"></param>
-        /// <param name="picture"></param>
+        /// <param name="img">Image in the .xaml</param>
+        /// <param name="picture">Path to the image</param>
         /// <param name="freq"></param>
         public InteractiveObject(ref Image img, string picture, float freq, float delay = 60, int first_frame = -1) {
             image = img;
@@ -52,7 +60,8 @@ namespace NPI_2 {
         }
 
         /// <summary>
-        /// This metod sets the position where the picture will show.
+        /// This metod changes the position where the picture will show randomly.
+        /// Width and height are greater than RenderWidth and RenderHeight to force the images to reach the borders
         /// </summary>
         /// <param name="img"></param>
 		public void changePosition(int actual_frame, int width = 745, int height = 570) {
@@ -71,6 +80,11 @@ namespace NPI_2 {
             activate(actual_frame);
 		}
 
+        /// <summary>
+        /// Devuelve si ha pasado el delay desde la última vez que fue desactivado el objeto
+        /// </summary>
+        /// <param name="actual_frame"></param>
+        /// <returns></returns>
 		public bool past_delay(int actual_frame) {
 			return first_deactivate_frame + delay < actual_frame && first_active_frame < actual_frame;
 		}
@@ -86,7 +100,7 @@ namespace NPI_2 {
 		}
 
         /// <summary>
-        /// This metod sets the picture that will be show.
+        /// This metod sets the picture that will be shown.
         /// </summary>
         /// <param name="picture"></param>
         public void changeImage(string path) {
@@ -94,7 +108,7 @@ namespace NPI_2 {
         }
 
         /// <summary>
-        /// This metod sets the frequency, in seconds, with which the picture will show.
+        /// This metod sets the frequency, in seconds, with which the picture will shown.
         /// </summary>
         /// <param name="new_freq"></param>
         public void setFrequency(float new_freq) {
@@ -117,8 +131,12 @@ namespace NPI_2 {
 		/// <returns></returns>
 		public bool isHit(Point point, int hit_frame) {
 			bool hit = false;
+
+            // Adjust of the point due to the apparently different reference system
 			point.X *= 1.16;
 			point.Y *= 1.18;
+
+            // Check if the shot is between the image margins and it reached after the object was active.
 			if (image.Margin.Top <= point.Y && image.Margin.Top + image.Height >= point.Y &&
 				image.Margin.Left + image.Width >= point.X && image.Margin.Left <= point.X &&
 				hit_frame > first_active_frame && active) {
@@ -128,6 +146,11 @@ namespace NPI_2 {
 			return hit;
 		}
 
+        /// <summary>
+        /// Método que comprueba si, dado el frame actual, el objeto está aún activo y lo cambia si no debe estarlo.
+        /// </summary>
+        /// <param name="actual_frame"></param>
+        /// <returns></returns>
 		public bool isDeactivated(int actual_frame) {
 			bool in_time = (actual_frame < first_active_frame + getFrequency() && actual_frame >= first_active_frame);
 			if (!in_time && active) {
@@ -136,26 +159,46 @@ namespace NPI_2 {
 			return !in_time;
 		}
 
+        /// <summary>
+        /// Devuelve si el método debe estar activo
+        /// </summary>
+        /// <returns></returns>
 		public bool isActive() {
 			return active;
 		}
 
+        /// <summary>
+        /// Activa el objeto
+        /// </summary>
+        /// <param name="frame"></param>
         public void activate(int frame) {
             first_active_frame = frame;
             active = true;
             image.Visibility = Visibility.Visible;
         }
 
+        /// <summary>
+        /// Desactiva el objeto
+        /// </summary>
+        /// <param name="frame"></param>
         public void deactivate(int frame) {
             first_deactivate_frame = frame;
             active = false;
             image.Visibility = Visibility.Hidden;
         }
 
+        /// <summary>
+        /// Cambia el primer frame en el que se activará el objeto
+        /// </summary>
+        /// <param name="frame"></param>
         public void setFirstActiveFrame(int frame) {
             first_active_frame = frame;
         }
 
+        /// <summary>
+        /// Devuelve el frame en el que se activó por última vez el objeto.
+        /// </summary>
+        /// <returns></returns>
 		public int getFirstFrame() {
 			return first_active_frame;
 		}
