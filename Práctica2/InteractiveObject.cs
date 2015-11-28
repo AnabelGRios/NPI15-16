@@ -142,6 +142,11 @@ namespace NPI_2 {
 				hit_frame > first_active_frame && active) {
 					hit = true;
                     deactivate(hit_frame);
+
+                    if (frequency > 70) {
+                        frequency -= 5;
+                    }
+
 			}
 			return hit;
 		}

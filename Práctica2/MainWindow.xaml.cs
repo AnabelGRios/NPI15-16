@@ -610,6 +610,9 @@ namespace NPI_2 {
                 life = 3;
                 lives_object.changeImage(3);
                 dalton2.setFirstActiveFrame(frame+1000);
+
+                dalton1.setFrequency(160);
+                dalton2.setFrequency(300);
             }
         }
 
