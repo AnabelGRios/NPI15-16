@@ -18,7 +18,7 @@
         <Viewbox Grid.Row="1" Stretch="Uniform" HorizontalAlignment="Center">
             <Image Name="video_image" Width="640" Height="480"/>
         </Viewbox>
-        <Image Name="imageDalton1"  Height="301" Width="331" Margin="99,288,569,0" Stretch="UniformToFill"  Visibility="Hidden"
+        <Image Name="imageDalton1"  Source="/images/JoeDalton.png" Height="265" Width="295" Margin="99,324,602,0" Stretch="UniformToFill"  Visibility="Hidden"
            VerticalAlignment="Top" Grid.Row="1"/>
         <Image Name="imageDalton2" Height="146" Width="175" Margin="722,0,98,0" Stretch="UniformToFill"  Visibility="Hidden"
            VerticalAlignment="Top" Grid.Row="1"/>
@@ -30,9 +30,13 @@
            VerticalAlignment="Top" Grid.Row="1"/>
         <Image Name="messages_image" Source="/images/game_over.png"  Width="430" Height="146" Margin="560,443,10,0" Stretch="UniformToFill"  Visibility="Hidden"
            VerticalAlignment="Top" Grid.Row="1"/>
-        <Image Name="exit_image"  Source="/images/salir.png" Width="320" Height="100" Margin="489,167,187,0" Stretch="UniformToFill"  Visibility="Hidden"
+        <Image Name="exit_image"  Source="/images/salir.png" Width="320" Height="100" Margin="489,302,187,0" Stretch="UniformToFill"  Visibility="Hidden"
            VerticalAlignment="Top" Grid.Row="1"/>
-        <Image Name="to_play_image" Source="/images/iniciar_juego.png" Width="320" Height="100" Margin="142,167,534,0" Stretch="UniformToFill"  Visibility="Hidden"
+        <Image Name="to_play_image" Source="/images/volver_juego.png" Width="320" Height="100" Margin="142,302,534,0" Stretch="UniformToFill"  Visibility="Hidden"
+           VerticalAlignment="Top" Grid.Row="1"/>
+        <Image Name="survive_image"  Source="/images/modo_superviviente.png" Width="320" Height="100" Margin="489,167,187,0" Stretch="UniformToFill"  Visibility="Hidden"
+           VerticalAlignment="Top" Grid.Row="1"/>
+        <Image Name="points_image" Source="/images/modo_puntuacion.png" Width="320" Height="100" Margin="142,167,534,0" Stretch="UniformToFill"  Visibility="Hidden"
            VerticalAlignment="Top" Grid.Row="1"/>
         <Image Name="exit_tutorial_image" Source="/images/salir_tutorial.png" Height="80" Width="250" Margin="676,0,78,0" Stretch="UniformToFill"  Visibility="Visible"
            VerticalAlignment="Top" Grid.Row="1"/>
@@ -46,6 +50,11 @@
         <StatusBar Grid.Row="1" FontSize="40" HorizontalAlignment="Center" Name="statusBar" VerticalAlignment="Center" Background="Transparent" Foreground="GreenYellow" Margin="344,302,98,27" Height="270" Width="554">
             <StatusBarItem Padding="0 0 0 10" RenderTransformOrigin="0.506,0.57">
                 <TextBlock Name="statusBarText" TextAlignment="Center" Margin="2 0 0 0" RenderTransformOrigin="1.048,2.887" Height="242" Width="544"></TextBlock>
+            </StatusBarItem>
+        </StatusBar>
+        <StatusBar Grid.Row="1" FontSize="40" HorizontalAlignment="Center" Name="points_bar" VerticalAlignment="Center" Background="Transparent" Foreground="DarkRed" Margin="10,0,714,505" Height="94" Width="272">
+            <StatusBarItem Padding="0 0 0 10" RenderTransformOrigin="0.506,0.57">
+                <TextBlock Name="pointsText" TextAlignment="Center" Margin="2 0 0 0" RenderTransformOrigin="0.504,0.505" Height="94" Width="270"></TextBlock>
             </StatusBarItem>
         </StatusBar>
     </Grid>

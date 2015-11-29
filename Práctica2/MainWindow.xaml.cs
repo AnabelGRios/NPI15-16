@@ -42,6 +42,8 @@ namespace NPI_2 {
     /// </summary>
     enum States { SETTING_POSITION, MEASURING_USER, PLAYING, PAUSED, TUTORIAL };
 
+    enum GameMode { POINTS, SURVIVE };
+
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
@@ -117,6 +119,8 @@ namespace NPI_2 {
 		/// User's life in the game
 		/// </sumary>
 		private int life = 0;
+        private int points = 0;
+        private int first_game_frame = 0;
 
         /// <summary>
         /// If the user's shot in the exit button
@@ -134,7 +138,12 @@ namespace NPI_2 {
         /// Interactive objects to interactuate with and buttons
         /// </summary>
 		InteractiveObject dalton1, dalton2, fajita, lives_object;
-        InteractiveObject exit_button, start_to_play_button, exit_tutorial;
+        InteractiveObject exit_button, back_to_game_button, exit_tutorial, point_mode_button, survive_mode_button;
+
+        /// <summary>
+        /// Actual game mode
+        /// </summary>
+        GameMode game_mode;
 
         /// <summary>
         /// Calculator object to calculate distances and projections.
@@ -340,8 +349,10 @@ namespace NPI_2 {
 			fajita = new InteractiveObject(ref fajita_image, "fajita.png", 160, 500);
 
             exit_button = new InteractiveObject(ref exit_image, "salir.png", 0);
-            start_to_play_button = new InteractiveObject(ref to_play_image, "iniciar_juego.png", 0);
+            back_to_game_button = new InteractiveObject(ref to_play_image, "volver_juego.png", 0);
             exit_tutorial = new InteractiveObject(ref exit_tutorial_image, "salir_tutorial.png", 0);
+            point_mode_button = new InteractiveObject(ref points_image, "modo_puntuacion.png", 0);
+            survive_mode_button = new InteractiveObject(ref survive_image, "modo_superviviente.png", 0);
 
 			spock_hand.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/spock.png")));
 			tutorial_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/gesto_1.png")));
@@ -445,6 +456,13 @@ namespace NPI_2 {
                 measureUser(skel, actual_frame);
             }
 
+            int shot_frame = -1;
+            Point shot_point;
+
+            shoot.detect_shoot_movement(skel, actual_frame);
+            shot_point = shoot.getShotPointAndFrame(ref shot_frame);
+
+
 			if (state == States.TUTORIAL) {
 				if (actual_frame - first_tutorial_image_first_frame < 250) {
 					tutorial_image.Visibility = Visibility.Visible;
@@ -464,11 +482,7 @@ namespace NPI_2 {
 					beginPause(actual_frame);
 				}
 
-				int shot_frame = -1;
-				Point shot_point;
 
-				shoot.detect_shoot_movement(skel, actual_frame);
-				shot_point = shoot.getShotPointAndFrame(ref shot_frame);
 
                 shot_point.X += 100;
 
@@ -481,13 +495,8 @@ namespace NPI_2 {
 			}
 
 			if (state == States.PLAYING) {
-				int shot_frame = -1;
-				Point shot_point;
 				bool dead = false;
 				bool dead_2 = false;
-				
-				shoot.detect_shoot_movement(skel, actual_frame);
-				shot_point = shoot.getShotPointAndFrame(ref shot_frame);
 				
                 // Comprobamos si hemos matado a uno de los hermanos Dalton
 				dead = dalton1.isHit(shot_point, shot_frame);
@@ -495,13 +504,8 @@ namespace NPI_2 {
 
                 // Comprobamos si no ha muerto y debe quitarnos una vida
 				if (dalton1.isActive() && !dead && dalton1.isDeactivated(actual_frame)) {
-					life--;
-					lives_object.changeImage(life);
-					if (life == 0) {
-                        messages_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/game_over.png")));
-                        messages_image.Visibility = Visibility.Visible;
-						beginPause(actual_frame);
-					}
+                    if(game_mode == GameMode.SURVIVE)
+                        takeALife(actual_frame);
 				}
 
                 // Comprobamos si debe volver a aparecer
@@ -510,14 +514,9 @@ namespace NPI_2 {
 				}
 
                 // Comprobamos si no ha muerto y debe quitarnos una vida
-				if (dalton2.isActive() && !dead_2 && dalton2.isDeactivated(actual_frame)) {
-					life--;
-					lives_object.changeImage(life);
-					if (life == 0) {
-                        messages_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/game_over.png")));
-                        messages_image.Visibility = Visibility.Visible;
-                        beginPause(actual_frame);
-					}
+                if (dalton2.isActive() && !dead_2 && dalton2.isDeactivated(actual_frame)) {
+                    if (game_mode == GameMode.SURVIVE)
+                        takeALife(actual_frame);
 				}
 
                 // Comprobamos si debe volver a aparecer
@@ -532,7 +531,7 @@ namespace NPI_2 {
                 }
 
                 // Comprobamos que el jugador ha cogido la fajita con la mano izquierda
-				if (life < 3 && fajita.isActive() && !fajita.isDeactivated(actual_frame)) {
+                if (life < 3 && fajita.isActive() && !fajita.isDeactivated(actual_frame)) {
 					Point left_hand = calculator.SkeletonPointToScreen(my_KinectSensor, skel.Joints[JointType.HandLeft].Position);
 					if (fajita.isHit(left_hand, actual_frame)) {
 						life++;
@@ -556,6 +555,25 @@ namespace NPI_2 {
 					spock_hand.Visibility = Visibility.Hidden;
 				}
 
+                // Acciones a realizar si el modo de juego es Puntuación
+                if (game_mode == GameMode.POINTS) {
+                    // Acaba el juego
+                    if (actual_frame - first_game_frame > 2700) {
+                        beginPause(actual_frame);
+                    }
+
+                    // Suma 
+                    if (dead) {
+                        points += 10 * (dalton1.getFrequency() - (shot_frame - dalton1.getFirstFrame()));
+                    }
+
+                    if (dead_2) {
+                        points += 10 * (dalton2.getFrequency() - (shot_frame - dalton2.getFirstFrame()));
+                    }
+
+                    pointsText.Text = points.ToString();
+                }
+
                 // Comprobamos si el jugador quiere pausar el juego.
                 pause.adjustColor(skel, actual_frame);
                 SkeletonPoint[] pause_points = new SkeletonPoint[2];
@@ -569,21 +587,29 @@ namespace NPI_2 {
 			}
 
             if( state== States.PAUSED) {
-                int shot_frame = -1;
-                Point shot_point;
-                shoot.detect_shoot_movement(skel, actual_frame);
-                shot_point = shoot.getShotPointAndFrame(ref shot_frame);
                 
 				shot_point.X += 100;
 				
                 // Comprobamos si el jugador le ha dado a uno de los dos botones del menú
                 if ( exit_button.isHit(shot_point, shot_frame)) {
-                        exit_hit = true;
+                    exit_hit = true;
                 }
 
-                if ( start_to_play_button.isHit(shot_point, shot_frame) ) {
+                // Vuelve al juego pausado
+                if (back_to_game_button.isHit(shot_point, shot_frame)) {
                     beginGame(actual_frame);
                 }
+
+                // Comienza el juego en el modo puntuación
+                if (point_mode_button.isHit(shot_point, shot_frame)) {
+                    beginPointsMode(actual_frame);
+                }
+
+                // Comienza el juego en el modo superviviente
+                if (survive_mode_button.isHit(shot_point, shot_frame)) {
+                    beginSurviveMode(actual_frame);
+                }
+
             }
         }
 
@@ -597,11 +623,12 @@ namespace NPI_2 {
             this.statusBarText.Text = "";
             messages_image.Visibility = Visibility.Hidden;
             exit_button.deactivate(frame);
-            start_to_play_button.deactivate(frame);
+            back_to_game_button.deactivate(frame);
+            survive_mode_button.deactivate(frame);
+            point_mode_button.deactivate(frame);
 
             video_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/desert-landscape.png")));
 
-            lives_object.activate(frame);
             dalton1.activate(frame);
             fajita.setFirstActiveFrame(frame + 1000);
 
@@ -627,15 +654,57 @@ namespace NPI_2 {
 
 			video_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/desert-landscape.png")));
             exit_button.activate(frame);
-            start_to_play_button.activate(frame);
-
-            if (life == 0) {
-                start_to_play_button.changeImage("../../images/iniciar_juego.png");
-            }
-            else {
-                start_to_play_button.changeImage("../../images/volver_juego.png");
+            survive_mode_button.activate(frame);
+            point_mode_button.activate(frame);
+            
+        
+            if(life != 0) {
+                back_to_game_button.activate(frame);
             }
 
         }
+
+        /// <summary>
+        /// Realiza los cambios visuales necesarios para comenzar el juego en modo Superviviente
+        /// </summary>
+        /// <param name="frame"></param>
+        private void beginSurviveMode(int frame) {
+            game_mode = GameMode.SURVIVE;
+
+            life = 0;
+            lives_object.activate(frame);
+            this.pointsText.Text = "";
+            beginGame(frame);
+        }
+
+        /// <summary>
+        /// Realiza los cambios visuales necesarios para comenzar el juego en modo Puntuación
+        /// </summary>
+        /// <param name="frame"></param>
+        private void beginPointsMode(int frame) {
+            game_mode = GameMode.POINTS;
+
+            lives_object.deactivate(frame);
+            first_game_frame = frame;
+            points = 0;
+            this.pointsText.Text = points.ToString();
+            beginGame(frame);
+        }
+
+        /// <summary>
+        /// Resta una vida
+        /// </summary>
+        /// <param name="frame"></param>
+        private void takeALife(int frame) {
+            life--;
+            lives_object.changeImage(life);
+            if (life == 0) {
+                messages_image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/game_over.png")));
+                messages_image.Visibility = Visibility.Visible;
+                beginPause(frame);
+            }
+        }
+
+
     }
 }

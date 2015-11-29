@@ -33,8 +33,8 @@ namespace NPI_2 {
 
 		private bool active = false;    // Estado del objeto
 
-        private float frequency;    // Tiempo activo en pantalla
-		float delay = -1;           // Retardo entre apariciones.
+        private int frequency;    // Tiempo activo en pantalla
+		private int delay = -1;           // Retardo entre apariciones.
 
         private int first_active_frame = -1;        
         private int first_deactivate_frame = -1;
@@ -50,7 +50,7 @@ namespace NPI_2 {
         /// <param name="img">Image in the .xaml</param>
         /// <param name="picture">Path to the image</param>
         /// <param name="freq"></param>
-        public InteractiveObject(ref Image img, string picture, float freq, float delay = 60, int first_frame = -1) {
+        public InteractiveObject(ref Image img, string picture, int freq, int delay = 60, int first_frame = -1) {
             image = img;
             image.Source = new BitmapImage(new Uri(System.IO.Path.GetFullPath("../../images/" + picture)));
             frequency = freq;
@@ -111,7 +111,7 @@ namespace NPI_2 {
         /// This metod sets the frequency, in seconds, with which the picture will shown.
         /// </summary>
         /// <param name="new_freq"></param>
-        public void setFrequency(float new_freq) {
+        public void setFrequency(int new_freq) {
             frequency = new_freq;
         }
 
@@ -119,7 +119,7 @@ namespace NPI_2 {
 		/// This metods returns the frequency of the object.
 		/// </summary>
 		/// <returns></returns>
-		public float getFrequency() {
+		public int getFrequency() {
 			return frequency;
 		}
 
