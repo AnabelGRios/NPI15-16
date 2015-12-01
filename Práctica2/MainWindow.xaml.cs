@@ -318,6 +318,9 @@ namespace NPI_2 {
                 state = States.SETTING_POSITION;
                 to_play_image.Visibility = Visibility.Hidden;
                 exit_image.Visibility = Visibility.Hidden;
+				imageDalton1.Visibility = Visibility.Hidden;
+				imageDalton2.Visibility = Visibility.Hidden;
+				life = 0;
             }
         }
 
@@ -420,6 +423,8 @@ namespace NPI_2 {
         private void detect_skeletons_position(Skeleton skel, int actual_frame) {
             // The head point projection to the screen is compared with the guide line
             Point point_head = calculator.SkeletonPointToScreen(my_KinectSensor,skel.Joints[JointType.Head].Position);
+			int shot_frame = -1;
+			Point shot_point;
 
             if (state == States.SETTING_POSITION) {
 
@@ -451,17 +456,10 @@ namespace NPI_2 {
 
                 }
             }
-
-            if (state == States.MEASURING_USER) {
+			
+			if (state == States.MEASURING_USER) {
                 measureUser(skel, actual_frame);
             }
-
-            int shot_frame = -1;
-            Point shot_point;
-
-            shoot.detect_shoot_movement(skel, actual_frame);
-            shot_point = shoot.getShotPointAndFrame(ref shot_frame);
-
 
 			if (state == States.TUTORIAL) {
 				if (actual_frame - first_tutorial_image_first_frame < 250) {
@@ -482,7 +480,8 @@ namespace NPI_2 {
 					beginPause(actual_frame);
 				}
 
-
+				shoot.detect_shoot_movement(skel, actual_frame);
+				shot_point = shoot.getShotPointAndFrame(ref shot_frame);
 
                 shot_point.X += 100;
 
@@ -497,6 +496,9 @@ namespace NPI_2 {
 			if (state == States.PLAYING) {
 				bool dead = false;
 				bool dead_2 = false;
+
+				shoot.detect_shoot_movement(skel, actual_frame);
+				shot_point = shoot.getShotPointAndFrame(ref shot_frame);
 				
                 // Comprobamos si hemos matado a uno de los hermanos Dalton
 				dead = dalton1.isHit(shot_point, shot_frame);
@@ -564,11 +566,11 @@ namespace NPI_2 {
 
                     // Suma 
                     if (dead) {
-                        points += 10 * (dalton1.getFrequency() - (shot_frame - dalton1.getFirstFrame()));
+                        points += dalton1.getFrequency() - (shot_frame - dalton1.getFirstFrame());
                     }
 
                     if (dead_2) {
-                        points += 10 * (dalton2.getFrequency() - (shot_frame - dalton2.getFirstFrame()));
+                        points += dalton2.getFrequency() - (shot_frame - dalton2.getFirstFrame());
                     }
 
                     pointsText.Text = points.ToString();
@@ -587,6 +589,9 @@ namespace NPI_2 {
 			}
 
             if( state== States.PAUSED) {
+
+				shoot.detect_shoot_movement(skel, actual_frame);
+				shot_point = shoot.getShotPointAndFrame(ref shot_frame);
                 
 				shot_point.X += 100;
 				

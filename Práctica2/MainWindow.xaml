@@ -16,7 +16,7 @@
         <DockPanel Grid.Row="0" Margin="0 0 0 20">
         </DockPanel>
         <Viewbox Grid.Row="1" Stretch="Uniform" HorizontalAlignment="Center">
-            <Image Name="video_image" Width="640" Height="480"/>
+            <Image Name="video_image" Width="451" Height="268"/>
         </Viewbox>
         <Image Name="imageDalton1"  Source="/images/JoeDalton.png" Height="265" Width="295" Margin="99,324,602,0" Stretch="UniformToFill"  Visibility="Hidden"
            VerticalAlignment="Top" Grid.Row="1"/>
